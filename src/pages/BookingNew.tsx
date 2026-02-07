@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format, differenceInDays, addDays } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, Users, Utensils, User, CheckCircle, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Calendar, Users, Utensils, User, CheckCircle, ChevronLeft, ChevronRight, Loader2, CreditCard, Wallet, Info, Landmark } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -12,11 +12,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { useRoomCategories, useMealPlanPrices, useTaxConfig, useSeasonMultiplier, useCheckAvailability } from "@/hooks/useBookingData";
+import { useRoomCategories, useMealPlanPrices, useTaxConfig, useSeasonMultiplier, useCheckAvailability, usePaymentSettings } from "@/hooks/useBookingData";
 import { usePriceCalculation } from "@/hooks/usePriceCalculation";
 import { useCreateBooking } from "@/hooks/useCreateBooking";
 import { AvailabilityIndicator } from "@/components/booking/AvailabilityIndicator";
-import type { BookingFormData, MealPlan, BOOKING_STEPS } from "@/types/booking";
+import type { BookingFormData, MealPlan } from "@/types/booking";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -46,6 +46,7 @@ const formatCurrency = (amount: number) => {
 const BookingPage = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
+  const [selectedPaymentProvider, setSelectedPaymentProvider] = useState<string | null>(null);
   const [formData, setFormData] = useState<BookingFormData>({
     checkInDate: undefined,
     checkOutDate: undefined,
@@ -72,6 +73,7 @@ const BookingPage = () => {
     formData.checkInDate,
     formData.checkOutDate
   );
+  const { data: paymentProviders = [] } = usePaymentSettings();
 
   const selectedRoom = roomCategories.find(r => r.id === formData.roomCategoryId);
 
@@ -99,7 +101,6 @@ const BookingPage = () => {
       case 1:
         return formData.checkInDate && formData.checkOutDate && numNights > 0;
       case 2:
-        // Just check if room is selected - AvailabilityIndicator shows warnings separately
         return formData.roomCategoryId && formData.numAdults > 0;
       case 3:
         return formData.mealPlan;
@@ -125,14 +126,17 @@ const BookingPage = () => {
   const handleSubmit = async (enquiryOnly: boolean) => {
     if (!priceBreakdown || !selectedRoom) return;
 
+    // Decide if we should do payment or just enquiry
+    const shouldDoPayment = !enquiryOnly && selectedPaymentProvider;
+
     try {
       // 1. Create the booking first
       const result = await createBooking.mutateAsync({
-        formData: { ...formData, isEnquiryOnly: enquiryOnly },
+        formData: { ...formData, isEnquiryOnly: !shouldDoPayment },
         priceBreakdown,
       });
 
-      if (enquiryOnly) {
+      if (!shouldDoPayment) {
         navigate("/booking/confirmation", {
           state: {
             booking: {
@@ -149,98 +153,114 @@ const BookingPage = () => {
               numChildren: formData.numChildren,
               mealPlan: formData.mealPlan,
               grandTotal: priceBreakdown.grandTotal,
-              isEnquiryOnly: enquiryOnly,
+              isEnquiryOnly: true,
             },
           },
         });
         return;
       }
 
-      // 2. If not enquiry, initiate Razorpay payment
-      const { data: orderData, error: orderError } = await supabase.functions.invoke('create-razorpay-order', {
-        body: {
-          amount: priceBreakdown.grandTotal,
-          currency: 'INR',
-          receipt: result.booking_reference
-        }
-      });
+      // 2. Handle Payment Flow based on provider
+      if (selectedPaymentProvider === 'razorpay') {
+        const razorpayConfig = paymentProviders?.find(p => p.provider === 'razorpay')?.config as any;
+        const keyId = razorpayConfig?.key_id || "rzp_test_placeholder";
 
-      if (orderError) throw orderError;
-
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_placeholder", // Replace with env var
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: "Jungle Heritage Resort",
-        description: `Booking #${result.booking_reference}`,
-        order_id: orderData.id,
-        handler: async function (response: any) {
-          const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-razorpay-payment', {
-            body: {
-              orderCreationId: orderData.id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpayOrderId: response.razorpay_order_id,
-              razorpaySignature: response.razorpay_signature,
-              bookingId: result.id
-            }
-          });
-
-          if (verifyError || !verifyData.success) {
-            toast({
-              title: "Payment Verification Failed",
-              description: "Please contact support.",
-              variant: "destructive"
-            });
-            return;
+        const { data: orderData, error: orderError } = await supabase.functions.invoke('create-razorpay-order', {
+          body: {
+            amount: priceBreakdown.grandTotal,
+            currency: 'INR',
+            receipt: result.booking_reference
           }
+        });
 
-          toast({
-            title: "Payment Successful",
-            description: "Your booking is confirmed!",
-          });
+        if (orderError) throw orderError;
 
-          // Redirect to success
-          navigate("/booking/confirmation", {
-            state: {
-              booking: {
-                bookingReference: result.booking_reference,
-                guestName: formData.guestName,
-                guestEmail: formData.guestEmail,
-                guestPhone: formData.guestPhone,
-                roomName: selectedRoom.name,
-                packageName: undefined,
-                checkInDate: formData.checkInDate!.toISOString(),
-                checkOutDate: formData.checkOutDate!.toISOString(),
-                numNights: priceBreakdown.numNights,
-                numAdults: formData.numAdults,
-                numChildren: formData.numChildren,
-                mealPlan: formData.mealPlan,
-                grandTotal: priceBreakdown.grandTotal,
-                isEnquiryOnly: false,
-                paymentStatus: 'paid'
+        const options = {
+          key: keyId,
+          amount: orderData.amount,
+          currency: orderData.currency,
+          name: "Aranya Resort",
+          description: `Booking #${result.booking_reference}`,
+          order_id: orderData.id,
+          handler: async function (response: any) {
+            const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-razorpay-payment', {
+              body: {
+                orderCreationId: orderData.id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpayOrderId: response.razorpay_order_id,
+                razorpaySignature: response.razorpay_signature,
+                bookingId: result.id
+              }
+            });
+
+            if (verifyError || !verifyData.success) {
+              toast({
+                title: "Payment Verification Failed",
+                description: "Please contact support.",
+                variant: "destructive"
+              });
+              return;
+            }
+
+            toast({
+              title: "Payment Successful",
+              description: "Your booking is confirmed!",
+            });
+
+            navigate("/booking/confirmation", {
+              state: {
+                booking: {
+                  bookingReference: result.booking_reference,
+                  guestName: formData.guestName,
+                  guestEmail: formData.guestEmail,
+                  guestPhone: formData.guestPhone,
+                  roomName: selectedRoom.name,
+                  packageName: undefined,
+                  checkInDate: formData.checkInDate!.toISOString(),
+                  checkOutDate: formData.checkOutDate!.toISOString(),
+                  numNights: priceBreakdown.numNights,
+                  numAdults: formData.numAdults,
+                  numChildren: formData.numChildren,
+                  mealPlan: formData.mealPlan,
+                  grandTotal: priceBreakdown.grandTotal,
+                  isEnquiryOnly: false,
+                  paymentStatus: 'paid'
+                },
               },
-            },
-          });
-        },
-        prefill: {
-          name: formData.guestName,
-          email: formData.guestEmail,
-          contact: formData.guestPhone
-        },
-        theme: {
-          color: "#1a3a2f"
-        }
-      };
+            });
+          },
+          prefill: {
+            name: formData.guestName,
+            email: formData.guestEmail,
+            contact: formData.guestPhone
+          },
+          theme: {
+            color: "#1a3a2f"
+          }
+        };
 
-      const rzp1 = new window.Razorpay(options);
-      rzp1.on('payment.failed', function (response: any) {
+        const rzp1 = new window.Razorpay(options);
+        rzp1.on('payment.failed', function (response: any) {
+          toast({
+            title: "Payment Failed",
+            description: response.error.description,
+            variant: "destructive"
+          });
+        });
+        rzp1.open();
+      } else if (selectedPaymentProvider === 'stripe') {
+        // Stripe implementation would go here
         toast({
-          title: "Payment Failed",
-          description: response.error.description,
+          title: "Stripe Integration",
+          description: "Stripe payment flow coming soon.",
+        });
+      } else {
+        toast({
+          title: "Unsupported Provider",
+          description: "This payment provider is not fully integrated yet.",
           variant: "destructive"
         });
-      });
-      rzp1.open();
+      }
 
     } catch (error) {
       console.error("Booking/Payment Error:", error);
@@ -665,18 +685,53 @@ const BookingPage = () => {
                           </div>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                        <div className="space-y-4 pt-4">
+                          <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wider mb-3">Payment Method</h3>
+                          {paymentProviders && paymentProviders.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              {paymentProviders.map((payment) => (
+                                <button
+                                  key={payment.provider}
+                                  onClick={() => setSelectedPaymentProvider(payment.provider)}
+                                  className={cn(
+                                    "p-4 rounded-xl border text-left transition-all flex items-center justify-between",
+                                    selectedPaymentProvider === payment.provider
+                                      ? "border-gold bg-gold/5 shadow-sm"
+                                      : "border-border hover:border-gold/30"
+                                  )}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    {payment.provider === "razorpay" && <Wallet className="h-5 w-5 text-blue-500" />}
+                                    {payment.provider === "stripe" && <CreditCard className="h-5 w-5 text-indigo-500" />}
+                                    {payment.provider === "paypal" && <Info className="h-5 w-5 text-blue-600" />}
+                                    {payment.provider === "phonepe" && <Landmark className="h-5 w-5 text-purple-600" />}
+                                    <span className="font-medium capitalize">{payment.provider}</span>
+                                  </div>
+                                  {selectedPaymentProvider === payment.provider && (
+                                    <CheckCircle className="h-4 w-4 text-gold" />
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="p-4 rounded-xl bg-orange-50 border border-orange-100 text-orange-700 text-sm">
+                              Online payments are currently unavailable. You can send a booking enquiry instead.
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-border mt-6">
                           <Button
                             variant="luxury"
                             size="lg"
                             className="flex-1"
                             onClick={() => handleSubmit(false)}
-                            disabled={createBooking.isPending}
+                            disabled={createBooking.isPending || (!selectedPaymentProvider && paymentProviders.length > 0)}
                           >
                             {createBooking.isPending ? (
                               <Loader2 className="w-5 h-5 animate-spin" />
                             ) : (
-                              "Confirm Booking"
+                              selectedPaymentProvider ? `Pay with ${selectedPaymentProvider.charAt(0).toUpperCase() + selectedPaymentProvider.slice(1)}` : "Confirm Booking"
                             )}
                           </Button>
                           <Button
@@ -689,6 +744,12 @@ const BookingPage = () => {
                             Send Enquiry Instead
                           </Button>
                         </div>
+
+                        {paymentProviders.length > 0 && !selectedPaymentProvider && (
+                          <p className="text-xs text-center text-muted-foreground">
+                            Please select a payment method to confirm your booking immediately.
+                          </p>
+                        )}
                       </div>
                     )}
                   </motion.div>

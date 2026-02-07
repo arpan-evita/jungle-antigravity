@@ -18,9 +18,31 @@ serve(async (req) => {
 
         console.log('Verifying payment for booking:', bookingId);
 
-        // Verify signature
-        const keySecret = Deno.env.get('RAZORPAY_KEY_SECRET') ?? 'start_secret_placeholder';
+        // Initialize Supabase Client with service role to bypass RLS for getting config
+        const supabaseClient = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        )
 
+        // Fetch Razorpay credentials from database
+        const { data: razorpayData, error: razorpayError } = await supabaseClient
+            .from('payment_settings')
+            .select('config')
+            .eq('provider', 'razorpay')
+            .single()
+
+        if (razorpayError || !razorpayData) {
+            throw new Error(`Razorpay configuration not found: ${razorpayError?.message}`)
+        }
+
+        const config = razorpayData.config as any
+        const keySecret = config.key_secret
+
+        if (!keySecret) {
+            throw new Error("Razorpay secret key is not configured in settings.")
+        }
+
+        // Verify signature
         const shasum = crypto.createHmac('sha256', keySecret);
         shasum.update(`${orderCreationId}|${razorpayPaymentId}`);
         const digest = shasum.digest('hex');

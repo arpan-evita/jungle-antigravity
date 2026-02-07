@@ -11,7 +11,7 @@ export function useRoomCategories() {
         .select('*')
         .eq('is_active', true)
         .order('display_order');
-      
+
       if (error) throw error;
       return (data || []).map(room => ({
         id: room.id,
@@ -45,7 +45,7 @@ export function useMealPlanPrices() {
         .select('*')
         .eq('is_active', true)
         .order('adult_price');
-      
+
       if (error) throw error;
       return (data || []).map(mp => ({
         id: mp.id,
@@ -68,7 +68,7 @@ export function useSeasons() {
         .from('seasons')
         .select('*')
         .eq('is_active', true);
-      
+
       if (error) throw error;
       return (data || []).map(s => ({
         id: s.id,
@@ -92,7 +92,7 @@ export function usePackages() {
         .select('*')
         .eq('is_active', true)
         .order('display_order');
-      
+
       if (error) throw error;
       return (data || []).map(pkg => ({
         id: pkg.id,
@@ -129,7 +129,7 @@ export function useTaxConfig() {
         .from('tax_config')
         .select('*')
         .eq('is_active', true);
-      
+
       if (error) throw error;
       return (data || []).map(t => ({
         id: t.id,
@@ -150,7 +150,7 @@ export function useCheckAvailability(
     queryKey: ['availability', roomCategoryId, checkInDate?.toISOString(), checkOutDate?.toISOString()],
     queryFn: async (): Promise<number> => {
       if (!roomCategoryId || !checkInDate || !checkOutDate) return 0;
-      
+
       // Use the new get_available_rooms function
       const { data, error } = await supabase
         .rpc('get_available_rooms', {
@@ -158,12 +158,12 @@ export function useCheckAvailability(
           _check_in: checkInDate.toISOString().split('T')[0],
           _check_out: checkOutDate.toISOString().split('T')[0],
         });
-      
+
       if (error) {
         console.error('Availability check error:', error);
         return 0;
       }
-      
+
       // Returns an array of available rooms, so return the count
       return Array.isArray(data) ? data.length : 0;
     },
@@ -176,15 +176,30 @@ export function useSeasonMultiplier(date: Date | undefined) {
     queryKey: ['season-multiplier', date?.toISOString()],
     queryFn: async (): Promise<number> => {
       if (!date) return 1;
-      
+
       const { data, error } = await supabase
         .rpc('get_season_multiplier', {
           p_date: date.toISOString().split('T')[0],
         });
-      
+
       if (error) throw error;
       return Number(data) || 1;
     },
     enabled: !!date,
+  });
+}
+
+export function usePaymentSettings() {
+  return useQuery({
+    queryKey: ['payment-settings-public'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('payment_settings')
+        .select('provider, is_enabled, config')
+        .eq('is_enabled', true);
+
+      if (error) throw error;
+      return data;
+    },
   });
 }
