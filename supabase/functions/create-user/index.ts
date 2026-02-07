@@ -12,9 +12,14 @@ Deno.serve(async (req) => {
     }
 
     try {
+        console.log("=== CREATE USER FUNCTION STARTED ===");
+
         // Get the authorization header
         const authHeader = req.headers.get("Authorization");
+        console.log("Auth header present:", !!authHeader);
+
         if (!authHeader) {
+            console.error("ERROR: No authorization header");
             return new Response(JSON.stringify({ error: "No authorization header" }), {
                 status: 401,
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -26,35 +31,69 @@ Deno.serve(async (req) => {
         const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
         const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+        console.log("Supabase URL:", supabaseUrl);
+        console.log("Service key present:", !!supabaseServiceKey);
+
         const userClient = createClient(supabaseUrl, supabaseAnonKey, {
             global: { headers: { Authorization: authHeader } },
         });
 
         // Verify the user is authenticated and is an admin
+        console.log("Getting user...");
         const { data: { user }, error: userError } = await userClient.auth.getUser();
-        if (userError || !user) {
-            return new Response(JSON.stringify({ error: "Unauthorized" }), {
+
+        if (userError) {
+            console.error("ERROR getting user:", userError.message);
+            return new Response(JSON.stringify({ error: "Unauthorized: " + userError.message }), {
                 status: 401,
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
         }
 
+        if (!user) {
+            console.error("ERROR: No user found");
+            return new Response(JSON.stringify({ error: "Unauthorized: No user" }), {
+                status: 401,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+        }
+
+        console.log("User ID:", user.id);
+
         // Check if user is an admin using the is_admin function
+        console.log("Checking admin status...");
         const { data: isAdmin, error: roleError } = await userClient.rpc("is_admin", {
             _user_id: user.id,
         });
 
-        if (roleError || !isAdmin) {
+        console.log("is_admin result:", isAdmin);
+        console.log("is_admin error:", roleError);
+
+        if (roleError) {
+            console.error("ERROR checking admin:", roleError.message);
+            return new Response(JSON.stringify({ error: "Error checking permissions: " + roleError.message }), {
+                status: 403,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+        }
+
+        if (!isAdmin) {
+            console.error("ERROR: User is not admin");
             return new Response(JSON.stringify({ error: "Forbidden - Admin access required" }), {
                 status: 403,
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
         }
 
+        console.log("Admin check passed, parsing request body...");
+
         // Parse request body
         const { email, password, fullName, role } = await req.json();
 
+        console.log("Request data:", { email, fullName, role: role || "staff" });
+
         if (!email || !password || !fullName) {
+            console.error("ERROR: Missing required fields");
             return new Response(JSON.stringify({ error: "Email, password, and name are required" }), {
                 status: 400,
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -66,6 +105,8 @@ Deno.serve(async (req) => {
             auth: { persistSession: false },
         });
 
+        console.log("Creating user with admin client...");
+
         // Create the user
         const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
             email,
@@ -75,34 +116,40 @@ Deno.serve(async (req) => {
         });
 
         if (createError) {
+            console.error("ERROR creating user:", createError.message);
             return new Response(JSON.stringify({ error: createError.message }), {
                 status: 400,
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
         }
 
+        console.log("User created successfully, ID:", newUser.user?.id);
+
         // Assign the role
         if (newUser.user) {
+            console.log("Assigning role...");
             const { error: roleAssignmentError } = await adminClient
                 .from("user_roles")
                 .insert({
                     user_id: newUser.user.id,
-                    role: role || "staff", // Default to staff
+                    role: role || "staff",
                 });
 
             if (roleAssignmentError) {
-                // Rollback user creation if role assignment fails? 
-                // For now, return error but user remains created (can be assigned role manually)
-                console.error("Error assigning role:", roleAssignmentError);
+                console.error("ERROR assigning role:", roleAssignmentError.message);
                 return new Response(JSON.stringify({
                     user: newUser.user,
                     warning: "User created but role assignment failed: " + roleAssignmentError.message
                 }), {
-                    status: 200, // Partial success
+                    status: 200,
                     headers: { ...corsHeaders, "Content-Type": "application/json" },
                 });
             }
+
+            console.log("Role assigned successfully");
         }
+
+        console.log("=== CREATE USER FUNCTION COMPLETED SUCCESSFULLY ===");
 
         return new Response(
             JSON.stringify({
@@ -114,8 +161,8 @@ Deno.serve(async (req) => {
             }
         );
     } catch (error) {
-        console.error("Unexpected error:", error);
-        return new Response(JSON.stringify({ error: "Internal server error" }), {
+        console.error("UNEXPECTED ERROR:", error);
+        return new Response(JSON.stringify({ error: "Internal server error: " + error.message }), {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });

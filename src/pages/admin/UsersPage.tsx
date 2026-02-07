@@ -72,12 +72,22 @@ export default function UsersPage() {
 
   const addStaffMutation = useMutation({
     mutationFn: async () => {
+      // Get the current session to pass the access token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        throw new Error("No active session");
+      }
+
       const { data, error } = await supabase.functions.invoke("create-user", {
         body: {
           email,
           password,
           fullName,
           role: "staff",
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
         },
       });
 
