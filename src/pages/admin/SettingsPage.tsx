@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Settings, Building2, Percent, Info, Pencil } from "lucide-react";
+import { Settings, Building2, Percent, Info, Pencil, CreditCard, Wallet, Landmark } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -27,12 +28,24 @@ interface ResortSettings {
   address?: string;
 }
 
+interface PaymentSettings {
+  id: string;
+  provider: string;
+  is_enabled: boolean;
+  config: Record<string, string>;
+}
+
 export default function SettingsPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [resortName, setResortName] = useState("");
   const [location, setLocation] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<PaymentSettings | null>(null);
+  const [tempConfig, setTempConfig] = useState<Record<string, string>>({});
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -55,6 +68,15 @@ export default function SettingsPage() {
       const { data, error } = await supabase.from("tax_config").select("*");
       if (error) throw error;
       return data;
+    },
+  });
+
+  const { data: paymentSettings, isLoading: paymentsLoading } = useQuery({
+    queryKey: ["admin", "paymentSettings"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("payment_settings").select("*");
+      if (error) throw error;
+      return data as PaymentSettings[];
     },
   });
 
@@ -90,6 +112,37 @@ export default function SettingsPage() {
     },
   });
 
+  const updatePaymentMutation = useMutation({
+    mutationFn: async ({ id, is_enabled, config }: Partial<PaymentSettings> & { id: string }) => {
+      const updateData: any = {};
+      if (is_enabled !== undefined) updateData.is_enabled = is_enabled;
+      if (config !== undefined) updateData.config = config;
+      updateData.updated_by = (await supabase.auth.getUser()).data.user?.id;
+
+      const { error } = await supabase
+        .from("payment_settings")
+        .update(updateData)
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "paymentSettings"] });
+      setPaymentDialogOpen(false);
+      toast({
+        title: "Payment settings updated",
+        description: "Configuration has been saved successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to update payment settings",
+      });
+    },
+  });
+
   const handleEditClick = () => {
     if (resortSettings) {
       setResortName(resortSettings.resort_name);
@@ -100,7 +153,23 @@ export default function SettingsPage() {
     }
   };
 
+  const handleConfigurePayment = (provider: PaymentSettings) => {
+    setSelectedProvider(provider);
+    setTempConfig(provider.config || {});
+    setPaymentDialogOpen(true);
+  };
+
   const activeTax = taxes?.find((t) => t.is_active);
+
+  const getProviderLabel = (provider: string) => {
+    switch (provider) {
+      case "razorpay": return "Razorpay";
+      case "stripe": return "Stripe";
+      case "paypal": return "PayPal";
+      case "phonepe": return "PhonePe";
+      default: return provider;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -192,6 +261,61 @@ export default function SettingsPage() {
             <p className="text-xs text-muted-foreground mt-3">
               Configure taxes in the Pricing section
             </p>
+          </CardContent>
+        </Card>
+
+        {/* Payment Integration */}
+        <Card className="border-0 shadow-sm md:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-lg font-serif flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-[hsl(var(--gold))]" />
+              Payment Integration
+            </CardTitle>
+            <CardDescription>Connect and configure your payment partners</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {paymentsLoading ? (
+                [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 w-full" />)
+              ) : (
+                paymentSettings?.map((payment) => (
+                  <div
+                    key={payment.provider}
+                    className="p-4 rounded-lg border border-border bg-card/50 space-y-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {payment.provider === "razorpay" && <Wallet className="h-5 w-5 text-blue-500" />}
+                        {payment.provider === "stripe" && <CreditCard className="h-5 w-5 text-indigo-500" />}
+                        {payment.provider === "paypal" && <Info className="h-5 w-5 text-blue-600" />}
+                        {payment.provider === "phonepe" && <Landmark className="h-5 w-5 text-purple-600" />}
+                        <span className="font-medium">{getProviderLabel(payment.provider)}</span>
+                      </div>
+                      <Switch
+                        checked={payment.is_enabled}
+                        onCheckedChange={(checked) =>
+                          updatePaymentMutation.mutate({ id: payment.id, is_enabled: checked })
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2">
+                      <Badge variant={payment.is_enabled ? "secondary" : "outline"} className={payment.is_enabled ? "bg-green-100 text-green-700 hover:bg-green-100 border-0" : ""}>
+                        {payment.is_enabled ? "Connected" : "Disconnected"}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleConfigurePayment(payment)}
+                      >
+                        <Settings className="h-4 w-4 mr-1" />
+                        Configure
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -287,6 +411,52 @@ export default function SettingsPage() {
               disabled={updateSettingsMutation.isPending}
             >
               {updateSettingsMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Configure Payment Provider Dialog */}
+      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Configure {getProviderLabel(selectedProvider?.provider || "")}</DialogTitle>
+            <DialogDescription>
+              Enter your API credentials for {getProviderLabel(selectedProvider?.provider || "")}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {Object.keys(tempConfig).map((key) => (
+              <div key={key} className="space-y-2">
+                <Label htmlFor={key} className="capitalize">
+                  {key.replace(/_/g, " ")}
+                </Label>
+                <Input
+                  id={key}
+                  type="password"
+                  value={tempConfig[key]}
+                  onChange={(e) => setTempConfig({ ...tempConfig, [key]: e.target.value })}
+                  placeholder={`Enter ${key.replace(/_/g, " ")}`}
+                />
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() =>
+                updatePaymentMutation.mutate({
+                  id: selectedProvider!.id,
+                  config: tempConfig
+                })
+              }
+              disabled={updatePaymentMutation.isPending}
+            >
+              {updatePaymentMutation.isPending ? "Saving..." : "Save Configuration"}
             </Button>
           </DialogFooter>
         </DialogContent>
