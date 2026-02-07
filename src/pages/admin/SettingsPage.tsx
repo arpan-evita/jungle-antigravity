@@ -71,12 +71,50 @@ export default function SettingsPage() {
     },
   });
 
-  const { data: paymentSettings, isLoading: paymentsLoading } = useQuery({
+  const { data: paymentSettings, isLoading: paymentsLoading, error: paymentsError } = useQuery({
     queryKey: ["admin", "paymentSettings"],
     queryFn: async () => {
       const { data, error } = await supabase.from("payment_settings").select("*");
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching payment settings:", error);
+        throw error;
+      }
       return data as PaymentSettings[];
+    },
+  });
+
+  const initializePaymentsMutation = useMutation({
+    mutationFn: async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+
+      const providers = [
+        { provider: "razorpay", config: { key_id: "", key_secret: "" } },
+        { provider: "stripe", config: { publishable_key: "", secret_key: "" } },
+        { provider: "paypal", config: { client_id: "", client_secret: "" } },
+        { provider: "phonepe", config: { merchant_id: "", salt_key: "", salt_index: "" } },
+      ];
+
+      for (const p of providers) {
+        await supabase.from("payment_settings").upsert({
+          ...p,
+          updated_by: userId
+        }, { onConflict: 'provider' });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "paymentSettings"] });
+      toast({
+        title: "Payment settings initialized",
+        description: "Default providers have been added.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Initialization Error",
+        description: error.message || "Failed to initialize payment settings",
+      });
     },
   });
 
@@ -267,18 +305,44 @@ export default function SettingsPage() {
         {/* Payment Integration */}
         <Card className="border-0 shadow-sm md:col-span-2">
           <CardHeader>
-            <CardTitle className="text-lg font-serif flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-[hsl(var(--gold))]" />
-              Payment Integration
-            </CardTitle>
-            <CardDescription>Connect and configure your payment partners</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg font-serif flex items-center gap-2">
+                  <CreditCard className="h-5 w-5 text-[hsl(var(--gold))]" />
+                  Payment Integration
+                </CardTitle>
+                <CardDescription>Connect and configure your payment partners</CardDescription>
+              </div>
+              {!paymentsLoading && (!paymentSettings || paymentSettings.length === 0) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => initializePaymentsMutation.mutate()}
+                  disabled={initializePaymentsMutation.isPending}
+                >
+                  {initializePaymentsMutation.isPending ? "Initializing..." : "Initialize Providers"}
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {paymentsLoading ? (
-                [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 w-full" />)
-              ) : (
-                paymentSettings?.map((payment) => (
+            {paymentsError ? (
+              <div className="p-4 rounded-lg bg-destructive/10 text-destructive text-sm flex items-center gap-2">
+                <Info className="h-4 w-4" />
+                <p>Error loading payment settings: {paymentsError instanceof Error ? paymentsError.message : "Access denied (Check RLS policies)"}</p>
+              </div>
+            ) : paymentsLoading ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 w-full" />)}
+              </div>
+            ) : !paymentSettings || paymentSettings.length === 0 ? (
+              <div className="text-center py-8 border border-dashed rounded-lg">
+                <p className="text-sm text-muted-foreground">No payment providers configured yet.</p>
+                <p className="text-xs text-muted-foreground mt-1">Click the button above to initialize default providers.</p>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {paymentSettings.map((payment) => (
                   <div
                     key={payment.provider}
                     className="p-4 rounded-lg border border-border bg-card/50 space-y-4"
@@ -313,9 +377,9 @@ export default function SettingsPage() {
                       </Button>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
