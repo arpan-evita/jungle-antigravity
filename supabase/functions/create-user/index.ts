@@ -88,36 +88,38 @@ Deno.serve(async (req) => {
         console.log("Admin check passed, parsing request body...");
 
         // Parse request body
-        const { email, password, fullName, role } = await req.json();
+        const { email, fullName, role } = await req.json();
 
         console.log("Request data:", { email, fullName, role: role || "staff" });
 
-        if (!email || !password || !fullName) {
+        if (!email || !fullName) {
             console.error("ERROR: Missing required fields");
-            return new Response(JSON.stringify({ error: "Email, password, and name are required" }), {
+            return new Response(JSON.stringify({ error: "Email and name are required" }), {
                 status: 400,
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
         }
 
-        // Use service role client to create the user
+        // Use service role client to invite the user
         const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
             auth: { persistSession: false },
         });
 
-        console.log("Creating user with admin client...");
+        console.log("Inviting user with admin client...");
 
-        // Create the user
-        const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
+        // Invite the user
+        const { data: newUser, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
             email,
-            password,
-            user_metadata: { full_name: fullName },
-            email_confirm: true,
-        });
+            {
+                data: { full_name: fullName },
+                // You can optionally specify a redirect URL here
+                // redirectTo: `${req.headers.get("origin")}/admin/auth/callback`,
+            }
+        );
 
-        if (createError) {
-            console.error("ERROR creating user:", createError.message);
-            return new Response(JSON.stringify({ error: createError.message }), {
+        if (inviteError) {
+            console.error("ERROR inviting user:", inviteError.message);
+            return new Response(JSON.stringify({ error: inviteError.message }), {
                 status: 400,
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
@@ -149,12 +151,12 @@ Deno.serve(async (req) => {
             console.log("Role assigned successfully");
         }
 
-        console.log("=== CREATE USER FUNCTION COMPLETED SUCCESSFULLY ===");
+        console.log("=== CREATE USER (INVITATION) FUNCTION COMPLETED SUCCESSFULLY ===");
 
         return new Response(
             JSON.stringify({
                 user: newUser.user,
-                message: "User created successfully",
+                message: "Invitation sent successfully",
             }),
             {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },

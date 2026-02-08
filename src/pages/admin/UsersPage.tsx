@@ -79,7 +79,7 @@ export default function UsersPage() {
         throw new Error("No active session");
       }
 
-      const { data, error } = await supabase.functions.invoke("create-user", {
+      const { data, error } = await supabase.functions.invoke("create-staff-user", {
         body: {
           email,
           password,
@@ -175,9 +175,9 @@ export default function UsersPage() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add Staff Member</DialogTitle>
+              <DialogTitle>Create Staff Account</DialogTitle>
               <DialogDescription>
-                Create a new account for a staff member. They will be able to log in with these credentials.
+                Create a new user account with staff access to the admin panel.
               </DialogDescription>
             </DialogHeader>
             <form
@@ -219,6 +219,9 @@ export default function UsersPage() {
                   required
                   minLength={6}
                 />
+                <p className="text-[10px] text-muted-foreground">
+                  Minimum 6 characters. Share these credentials with the staff member securely.
+                </p>
               </div>
               <div className="flex justify-end gap-3 pt-4">
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
@@ -226,7 +229,7 @@ export default function UsersPage() {
                 </Button>
                 <Button type="submit" disabled={addStaffMutation.isPending}>
                   {addStaffMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Add Staff
+                  Create Staff
                 </Button>
               </div>
             </form>
