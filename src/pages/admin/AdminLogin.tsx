@@ -125,7 +125,7 @@ export default function AdminLogin() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[hsl(var(--forest-deep))] via-[hsl(var(--forest))] to-[hsl(var(--forest-light))] p-4">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyem0wLTRWMjhIMjR2MmgxMnptMC00di0ySDE0djJoMjJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-50" />
-      
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -133,8 +133,8 @@ export default function AdminLogin() {
         className="w-full max-w-md relative z-10"
       >
         {/* Back to site link */}
-        <Link 
-          to="/" 
+        <Link
+          to="/"
           className="inline-flex items-center gap-2 text-white/70 hover:text-white mb-6 transition-colors text-sm"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -148,7 +148,7 @@ export default function AdminLogin() {
             </div>
             <CardTitle className="text-2xl font-serif">Jungle Heritage Admin</CardTitle>
             <CardDescription>
-              {showForgotPassword 
+              {showForgotPassword
                 ? "Enter your email to reset your password"
                 : "Sign in to manage your resort"}
             </CardDescription>
@@ -188,8 +188,8 @@ export default function AdminLogin() {
                   >
                     Cancel
                   </Button>
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="flex-1 bg-[hsl(var(--forest-deep))] hover:bg-[hsl(var(--forest))]"
                     disabled={resetLoading}
                   >
@@ -254,8 +254,8 @@ export default function AdminLogin() {
                   )}
                 </div>
 
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="w-full bg-[hsl(var(--forest-deep))] hover:bg-[hsl(var(--forest))]"
                   disabled={isLoading}
                 >
@@ -268,7 +268,7 @@ export default function AdminLogin() {
         </Card>
 
         <p className="text-center text-white/50 text-xs mt-6">
-          © {new Date().getFullYear()} Jungle Heritage Resort & Spa. All rights reserved.
+          © {new Date().getFullYear()} Jungle Heritage Resort. All rights reserved.
         </p>
       </motion.div>
     </div>

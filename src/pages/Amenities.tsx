@@ -23,7 +23,7 @@ const amenities = [
     icon: UtensilsCrossed,
     title: "Restaurant & Bar",
     description:
-      "Aranyam, our signature restaurant, serves global cuisine with locally-sourced ingredients. The bar offers premium spirits and forest-inspired cocktails.",
+      "Jungle Heritage, our signature restaurant, serves global cuisine with locally-sourced ingredients. The bar offers premium spirits and forest-inspired cocktails.",
   },
   {
     icon: Wifi,
@@ -67,7 +67,7 @@ const Amenities = () => {
           <div className="absolute inset-0">
             <img
               src={poolImage}
-              alt="Aranya Resort Pool"
+              alt="Jungle Heritage Resort Pool"
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-forest-deep/80" />
@@ -84,7 +84,7 @@ const Amenities = () => {
                 Resort Amenities
               </h1>
               <p className="text-ivory/70 mt-4 max-w-2xl mx-auto">
-                Every detail at Aranya is designed to enhance your comfort and create 
+                Every detail at Jungle Heritage is designed to enhance your comfort and create
                 memorable experiences. Discover our world-class facilities.
               </p>
             </motion.div>

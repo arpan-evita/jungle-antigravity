@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { format, differenceInDays, addDays } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
@@ -74,6 +74,10 @@ const BookingPage = () => {
     formData.checkOutDate
   );
   const { data: paymentProviders = [] } = usePaymentSettings();
+
+  const sortedRoomCategories = useMemo(() => {
+    return [...roomCategories].sort((a, b) => a.base_price_per_night - b.base_price_per_night);
+  }, [roomCategories]);
 
   const selectedRoom = roomCategories.find(r => r.id === formData.roomCategoryId);
 
@@ -179,7 +183,7 @@ const BookingPage = () => {
           key: keyId,
           amount: orderData.amount,
           currency: orderData.currency,
-          name: "Aranya Resort",
+          name: "Jungle Heritage Resort",
           description: `Booking #${result.booking_reference}`,
           order_id: orderData.id,
           handler: async function (response: any) {
@@ -480,7 +484,7 @@ const BookingPage = () => {
                         <div className="space-y-4 pt-4">
                           <Label>Select Room</Label>
                           <div className="grid gap-4">
-                            {roomCategories.map((room) => (
+                            {sortedRoomCategories.map((room) => (
                               <button
                                 key={room.id}
                                 onClick={() => setFormData(prev => ({ ...prev, roomCategoryId: room.id }))}

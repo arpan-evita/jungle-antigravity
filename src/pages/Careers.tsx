@@ -2,12 +2,12 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { motion, useInView } from "framer-motion";
 import { useRef, useState } from "react";
-import { 
-  Heart, 
-  Home, 
-  GraduationCap, 
-  Utensils, 
-  TreePine, 
+import {
+  Heart,
+  Home,
+  GraduationCap,
+  Utensils,
+  TreePine,
   Users,
   MapPin,
   Clock,
@@ -91,13 +91,6 @@ const positions = [
     location: "On-site",
     description: "Oversee housekeeping team and maintain resort standards. Previous supervisory experience in hospitality required.",
   },
-  {
-    title: "Spa Therapist",
-    department: "Wellness",
-    type: "Full-time",
-    location: "On-site",
-    description: "Provide therapeutic treatments and wellness services. Certification in massage therapy and Ayurveda preferred.",
-  },
 ];
 
 const applicationSchema = z.object({
@@ -116,7 +109,7 @@ const Careers = () => {
   const benefitsInView = useInView(benefitsRef, { once: true, margin: "-100px" });
   const positionsInView = useInView(positionsRef, { once: true, margin: "-100px" });
   const formInView = useInView(formRef, { once: true, margin: "-100px" });
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -130,7 +123,7 @@ const Careers = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const validation = applicationSchema.safeParse(formData);
     if (!validation.success) {
       toast({
@@ -142,7 +135,7 @@ const Careers = () => {
     }
 
     setIsSubmitting(true);
-    
+
     try {
       const { error } = await supabase.from("enquiries").insert({
         name: formData.name,
@@ -159,7 +152,7 @@ const Careers = () => {
         title: "Application Submitted!",
         description: "Thank you for your interest. We'll review your application and get back to you soon.",
       });
-      
+
       setFormData({
         name: "",
         email: "",
@@ -311,8 +304,8 @@ const Careers = () => {
                         {position.description}
                       </p>
                     </div>
-                    <Button 
-                      variant="luxuryDark" 
+                    <Button
+                      variant="luxuryDark"
                       className="md:shrink-0"
                       onClick={() => {
                         setFormData(prev => ({ ...prev, position: position.title }));
@@ -394,8 +387,8 @@ const Careers = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="position">Position *</Label>
-                    <Select 
-                      value={formData.position} 
+                    <Select
+                      value={formData.position}
                       onValueChange={(value) => setFormData({ ...formData, position: value })}
                     >
                       <SelectTrigger>
@@ -436,10 +429,10 @@ const Careers = () => {
                   />
                 </div>
 
-                <Button 
-                  type="submit" 
-                  variant="luxuryDark" 
-                  size="lg" 
+                <Button
+                  type="submit"
+                  variant="luxuryDark"
+                  size="lg"
                   className="w-full"
                   disabled={isSubmitting}
                 >

@@ -80,7 +80,7 @@ export function HighlightsSection() {
           className="text-center mb-20"
         >
           <span className="inline-block px-5 py-2 border border-gold/30 rounded-full text-gold text-[11px] uppercase tracking-[0.25em] mb-6">
-            The Aranya Experience
+            The Jungle Heritage Experience
           </span>
           <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl font-medium text-foreground tracking-tight leading-[1.1]">
             Curated for the

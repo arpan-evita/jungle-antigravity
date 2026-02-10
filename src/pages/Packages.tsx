@@ -35,8 +35,8 @@ const Packages = () => {
                 Packages & Offers
               </h1>
               <p className="text-ivory/70 mt-4 max-w-2xl mx-auto">
-                Curated packages designed for every occasion. From romantic getaways 
-                to family adventures, find the perfect way to experience Aranya.
+                Curated packages designed for every occasion. From romantic getaways
+                to family adventures, find the perfect way to experience Jungle Heritage.
               </p>
             </motion.div>
           </div>

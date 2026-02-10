@@ -35,7 +35,7 @@ export function RoomsPreview() {
       {/* Decorative Elements */}
       <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
       <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
-      
+
       <div className="luxury-container relative">
         {/* Header */}
         <motion.div
@@ -49,10 +49,10 @@ export function RoomsPreview() {
           </span>
           <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl font-medium text-ivory tracking-tight leading-[1.1]">
             Our
-            <span className="italic text-gold-light ml-3">Signature Retreats</span>
+            <span className="italic text-gold-light ml-3">Signature Escapes</span>
           </h2>
           <p className="text-ivory/60 mt-6 max-w-2xl mx-auto text-lg leading-relaxed">
-            Each accommodation is thoughtfully designed to immerse you in nature 
+            Each accommodation is thoughtfully designed to immerse you in nature
             while providing the utmost comfort and luxury.
           </p>
           <div className="w-20 h-[1px] bg-gradient-to-r from-transparent via-gold/50 to-transparent mx-auto mt-8" />
@@ -78,75 +78,75 @@ export function RoomsPreview() {
             </div>
           ) : (
             rooms.map((room, index) => (
-            <motion.div
-              key={room.id}
-              initial={{ opacity: 0, y: 50 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.8, delay: 0.2 + index * 0.15 }}
-              className="group"
-            >
-              <div className="relative overflow-hidden rounded-3xl bg-forest/50 backdrop-blur-sm border border-ivory/5">
-                {/* Image */}
-                <div className="relative aspect-[4/3] overflow-hidden">
-                  <img
-                    src={getRoomImage(room.images)}
-                    alt={room.name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-forest-deep via-transparent to-transparent" />
-                  
-                  {/* Price Badge */}
-                  <div className="absolute top-5 right-5 bg-ivory/95 backdrop-blur-md rounded-xl px-4 py-3 text-center shadow-luxury">
-                    <div className="flex items-baseline gap-1">
-                      <span className="font-serif text-2xl font-semibold text-forest-deep">
-                        ₹{room.base_price_per_night.toLocaleString("en-IN")}
+              <motion.div
+                key={room.id}
+                initial={{ opacity: 0, y: 50 }}
+                animate={isInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.8, delay: 0.2 + index * 0.15 }}
+                className="group"
+              >
+                <div className="relative overflow-hidden rounded-3xl bg-forest/50 backdrop-blur-sm border border-ivory/5">
+                  {/* Image */}
+                  <div className="relative aspect-[4/3] overflow-hidden">
+                    <img
+                      src={getRoomImage(room.images)}
+                      alt={room.name}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-forest-deep via-transparent to-transparent" />
+
+                    {/* Price Badge */}
+                    <div className="absolute top-5 right-5 bg-ivory/95 backdrop-blur-md rounded-xl px-4 py-3 text-center shadow-luxury">
+                      <div className="flex items-baseline gap-1">
+                        <span className="font-serif text-2xl font-semibold text-forest-deep">
+                          ₹{room.base_price_per_night.toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider">per night</span>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-6 lg:p-8">
+                    {room.description && (
+                      <span className="text-gold-light text-sm italic font-serif line-clamp-1">
+                        {room.description.slice(0, 50)}...
+                      </span>
+                    )}
+                    <h3 className="font-serif text-2xl md:text-3xl font-medium text-ivory mt-2 group-hover:text-gold-light transition-colors">
+                      {room.name}
+                    </h3>
+
+                    {/* Details */}
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-5 text-ivory/60 text-sm">
+                      <span className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-gold" />
+                        {formatOccupancy(room.max_adults, room.max_children)}
                       </span>
                     </div>
-                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">per night</span>
+
+                    {/* Highlight Badge */}
+                    <div className="flex items-center gap-2 mt-5 text-gold-light text-sm">
+                      <Sparkles className="w-4 h-4" />
+                      <span>{getFirstAmenity(room.amenities)}</span>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-4 mt-6 pt-6 border-t border-ivory/10">
+                      <Button variant="luxury" size="sm" asChild className="flex-1">
+                        <Link to="/booking">Book Now</Link>
+                      </Button>
+                      <Link
+                        to={`/rooms/${room.slug}`}
+                        className="flex items-center gap-2 text-ivory/60 hover:text-gold text-sm transition-colors"
+                      >
+                        Details
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </div>
                   </div>
                 </div>
-
-                {/* Content */}
-                <div className="p-6 lg:p-8">
-                  {room.description && (
-                    <span className="text-gold-light text-sm italic font-serif line-clamp-1">
-                      {room.description.slice(0, 50)}...
-                    </span>
-                  )}
-                  <h3 className="font-serif text-2xl md:text-3xl font-medium text-ivory mt-2 group-hover:text-gold-light transition-colors">
-                    {room.name}
-                  </h3>
-
-                  {/* Details */}
-                  <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-5 text-ivory/60 text-sm">
-                    <span className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-gold" />
-                      {formatOccupancy(room.max_adults, room.max_children)}
-                    </span>
-                  </div>
-
-                  {/* Highlight Badge */}
-                  <div className="flex items-center gap-2 mt-5 text-gold-light text-sm">
-                    <Sparkles className="w-4 h-4" />
-                    <span>{getFirstAmenity(room.amenities)}</span>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-4 mt-6 pt-6 border-t border-ivory/10">
-                    <Button variant="luxury" size="sm" asChild className="flex-1">
-                      <Link to="/booking">Book Now</Link>
-                    </Button>
-                    <Link 
-                      to={`/rooms/${room.slug}`}
-                      className="flex items-center gap-2 text-ivory/60 hover:text-gold text-sm transition-colors"
-                    >
-                      Details
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+              </motion.div>
             ))
           )}
         </div>

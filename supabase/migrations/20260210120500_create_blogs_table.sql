@@ -4,7 +4,7 @@ create table if not exists public.blogs (
   title text not null,
   slug text unique not null,
   excerpt text,
-  content text not null,
+  content jsonb not null,
   featured_image text,
   category text,
   author_id uuid references auth.users(id),

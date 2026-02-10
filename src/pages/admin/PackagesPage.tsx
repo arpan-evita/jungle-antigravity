@@ -88,7 +88,7 @@ export default function PackagesPage() {
         is_percentage: data.is_percentage,
         is_active: data.is_active,
       };
-      
+
       if (data.id) {
         const { error } = await supabase.from("packages").update(payload).eq("id", data.id);
         if (error) throw error;
@@ -179,8 +179,8 @@ export default function PackagesPage() {
                     id="name"
                     value={formData.name}
                     onChange={(e) => {
-                      setFormData({ 
-                        ...formData, 
+                      setFormData({
+                        ...formData,
                         name: e.target.value,
                         slug: editingPackage ? formData.slug : generateSlug(e.target.value)
                       });
@@ -217,7 +217,7 @@ export default function PackagesPage() {
                   value={formData.inclusions}
                   onChange={(e) => setFormData({ ...formData, inclusions: e.target.value })}
                   rows={4}
-                  placeholder="Welcome drink&#10;Breakfast included&#10;Spa access..."
+                  placeholder="Welcome drink&#10;Breakfast included&#10;Guided nature walk..."
                 />
               </div>
 

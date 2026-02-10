@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
-import { 
-  Check, 
-  Calendar, 
-  Users, 
-  MapPin, 
-  Utensils, 
-  Download, 
-  Mail, 
+import {
+  Check,
+  Calendar,
+  Users,
+  MapPin,
+  Utensils,
+  Download,
+  Mail,
   Phone,
   ArrowRight,
   Home,
@@ -80,11 +80,11 @@ export default function BookingConfirmation() {
   };
 
   const handleCreateAccount = () => {
-    navigate("/signup", { 
-      state: { 
+    navigate("/signup", {
+      state: {
         bookingRef: bookingDetails.bookingReference,
         email: bookingDetails.guestEmail,
-      } 
+      }
     });
   };
 
@@ -123,7 +123,7 @@ export default function BookingConfirmation() {
               {bookingDetails.isEnquiryOnly ? "Enquiry Submitted!" : "Booking Confirmed!"}
             </h1>
             <p className="text-muted-foreground">
-              {bookingDetails.isEnquiryOnly 
+              {bookingDetails.isEnquiryOnly
                 ? "We'll get back to you shortly with availability and pricing."
                 : "Your reservation has been confirmed. Check your email for details."}
             </p>
@@ -378,18 +378,18 @@ export default function BookingConfirmation() {
           >
             <p>
               Questions about your booking? Contact us at{" "}
-              <a 
-                href="tel:+919876543210" 
+              <a
+                href="tel:+919876543210"
                 className="text-[hsl(var(--gold))] hover:underline"
               >
                 +91 98765 43210
               </a>
               {" "}or{" "}
-              <a 
-                href="mailto:reservations@aranyaresort.com"
+              <a
+                href="mailto:reservation@jungleheritage.com"
                 className="text-[hsl(var(--gold))] hover:underline"
               >
-                reservations@aranyaresort.com
+                reservation@jungleheritage.com
               </a>
             </p>
           </motion.div>

@@ -14,7 +14,7 @@ import {
     Loader2,
     ChevronRight,
     Facebook,
-    Twitter,
+    Instagram,
     Linkedin
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -132,15 +132,13 @@ export default function BlogDetail() {
                             {/* Sidebar / Sharing */}
                             <aside className="lg:col-span-1 hidden lg:block sticky top-32 h-fit">
                                 <div className="flex flex-col gap-6 items-center">
-                                    <div className="p-3 bg-[hsl(var(--gold))/0.05] rounded-full text-[hsl(var(--gold))] cursor-pointer hover:bg-[hsl(var(--gold))] hover:text-white transition-all">
-                                        <Share2 className="h-5 w-5" />
-                                    </div>
-                                    <div className="p-3 bg-[hsl(var(--gold))/0.05] rounded-full text-[hsl(var(--gold))] cursor-pointer hover:bg-[hsl(var(--gold))] hover:text-white transition-all">
-                                        <Bookmark className="h-5 w-5" />
-                                    </div>
+                                    <a href="https://www.facebook.com/jungleheritage" target="_blank" rel="noopener noreferrer" className="p-3 bg-[hsl(var(--gold))/0.05] rounded-full text-[hsl(var(--gold))] cursor-pointer hover:bg-[hsl(var(--gold))] hover:text-white transition-all">
+                                        <Facebook className="h-5 w-5" />
+                                    </a>
+                                    <a href="https://www.instagram.com/jungleheritage/" target="_blank" rel="noopener noreferrer" className="p-3 bg-[hsl(var(--gold))/0.05] rounded-full text-[hsl(var(--gold))] cursor-pointer hover:bg-[hsl(var(--gold))] hover:text-white transition-all">
+                                        <Instagram className="h-5 w-5" />
+                                    </a>
                                     <div className="w-[1px] h-12 bg-border my-2" />
-                                    <Facebook className="h-5 w-5 text-muted-foreground hover:text-[#1877F2] cursor-pointer transition-colors" />
-                                    <Twitter className="h-5 w-5 text-muted-foreground hover:text-[#1DA1F2] cursor-pointer transition-colors" />
                                     <Linkedin className="h-5 w-5 text-muted-foreground hover:text-[#0A66C2] cursor-pointer transition-colors" />
                                 </div>
                             </aside>
@@ -197,9 +195,12 @@ export default function BlogDetail() {
                                     </div>
 
                                     <div className="flex gap-4 lg:hidden">
-                                        <Share2 className="h-5 w-5 text-muted-foreground" />
-                                        <Facebook className="h-5 w-5 text-muted-foreground" />
-                                        <Twitter className="h-5 w-5 text-muted-foreground" />
+                                        <a href="https://www.facebook.com/jungleheritage" target="_blank" rel="noopener noreferrer">
+                                            <Facebook className="h-5 w-5 text-muted-foreground" />
+                                        </a>
+                                        <a href="https://www.instagram.com/jungleheritage/" target="_blank" rel="noopener noreferrer">
+                                            <Instagram className="h-5 w-5 text-muted-foreground" />
+                                        </a>
                                     </div>
                                 </div>
 

@@ -142,13 +142,13 @@ const Contact = () => {
                     </div>
                   </a>
 
-                  <a href="mailto:reservations@aranyaresort.com" className="flex items-start gap-4 group">
+                  <a href="mailto:reservation@jungleheritage.com" className="flex items-start gap-4 group">
                     <div className="w-14 h-14 rounded-full bg-forest/5 flex items-center justify-center group-hover:bg-forest transition-colors">
                       <Mail className="w-6 h-6 text-gold group-hover:text-ivory transition-colors" />
                     </div>
                     <div>
                       <h3 className="font-medium text-foreground">Email</h3>
-                      <p className="text-muted-foreground">reservation@aranyaresort.in</p>
+                      <p className="text-muted-foreground">reservation@jungleheritage.com</p>
                       <p className="text-sm text-muted-foreground">Response within 24 hours</p>
                     </div>
                   </a>

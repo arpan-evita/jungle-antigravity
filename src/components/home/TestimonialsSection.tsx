@@ -25,9 +25,9 @@ const fallbackTestimonials = [
     id: "3",
     reviewer_name: "Aditya Verma",
     reviewer_location: "Bangalore",
-    occasion: "Corporate Retreat",
+    occasion: "Corporate Gathering",
     rating: 5,
-    review_text: "We hosted our leadership team retreat here and it exceeded all expectations. The serene environment fostered incredible discussions, and the team bonding activities were excellent.",
+    review_text: "We hosted our leadership team offsite here and it exceeded all expectations. The serene environment fostered incredible discussions, and the team bonding activities were excellent.",
   },
 ];
 
@@ -47,7 +47,7 @@ export function TestimonialsSection() {
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
   const { data: reviews, isLoading } = useReviews();
-  
+
   // Use fetched reviews or fallback
   const testimonials = reviews && reviews.length > 0 ? reviews : fallbackTestimonials;
 
@@ -168,7 +168,7 @@ export function TestimonialsSection() {
               >
                 <ChevronLeft className="w-5 h-5 text-foreground group-hover:text-gold transition-colors" />
               </button>
-              
+
               <div className="flex items-center gap-2.5">
                 {testimonials.map((_, i) => (
                   <button
@@ -178,16 +178,15 @@ export function TestimonialsSection() {
                       setCurrentIndex(i);
                       setTimeout(() => setIsAutoPlaying(true), 8000);
                     }}
-                    className={`h-2 rounded-full transition-all duration-500 ${
-                      i === currentIndex 
-                        ? "w-8 bg-gold" 
+                    className={`h-2 rounded-full transition-all duration-500 ${i === currentIndex
+                        ? "w-8 bg-gold"
                         : "w-2 bg-border hover:bg-gold/50"
-                    }`}
+                      }`}
                     aria-label={`Go to testimonial ${i + 1}`}
                   />
                 ))}
               </div>
-              
+
               <button
                 onClick={() => handleManualNavigation('next')}
                 className="w-12 h-12 rounded-full border border-border hover:border-gold hover:bg-gold/5 flex items-center justify-center transition-all group"
