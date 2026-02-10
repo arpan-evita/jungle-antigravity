@@ -37,6 +37,22 @@ export default function BlogDetail() {
         },
     });
 
+    const { data: relatedBlogs } = useQuery({
+        queryKey: ["related-blogs", slug, blog?.category],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from("blogs")
+                .select("id, title, slug, category")
+                .eq("is_published", true)
+                .neq("slug", slug!)
+                .limit(3);
+
+            if (error) throw error;
+            return data;
+        },
+        enabled: !!blog,
+    });
+
     if (isLoading) {
         return (
             <div className="min-h-screen flex flex-col">
@@ -71,7 +87,7 @@ export default function BlogDetail() {
 
             <main className="flex-grow">
                 {/* Hero Section with Featured Image */}
-                <section className="relative h-[60vh] min-h-[400px] overflow-hidden">
+                <section className="relative h-[70vh] min-h-[550px] overflow-hidden">
                     <img
                         src={blog.featured_image || "https://images.unsplash.com/photo-1433086566608-bcfa2963c17a?q=80&w=1200&auto=format&fit=crop"}
                         alt={blog.title}
@@ -220,13 +236,16 @@ export default function BlogDetail() {
                                 <div>
                                     <h4 className="text-lg font-serif mb-6 border-b pb-2">Related Articles</h4>
                                     <div className="space-y-6">
-                                        {/* Placeholder for related blogs */}
-                                        {[1, 2, 3].map((i) => (
-                                            <div key={i} className="group cursor-pointer">
-                                                <div className="text-xs text-[hsl(var(--gold))] font-medium mb-1">Wildlife</div>
-                                                <h5 className="font-medium group-hover:text-[hsl(var(--gold))] transition-colors line-clamp-2">The Secret Life of Tigers in the Wilderness</h5>
-                                            </div>
-                                        ))}
+                                        {relatedBlogs && relatedBlogs.length > 0 ? (
+                                            relatedBlogs.map((related) => (
+                                                <Link key={related.id} to={`/blog/${related.slug}`} className="block group">
+                                                    <div className="text-xs text-[hsl(var(--gold))] font-medium mb-1">{related.category || "Wildlife"}</div>
+                                                    <h5 className="font-medium group-hover:text-[hsl(var(--gold))] transition-colors line-clamp-2">{related.title}</h5>
+                                                </Link>
+                                            ))
+                                        ) : (
+                                            <p className="text-sm text-muted-foreground">No related articles found.</p>
+                                        )}
                                     </div>
                                 </div>
 
