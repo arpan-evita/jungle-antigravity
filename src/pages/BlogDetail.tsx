@@ -79,8 +79,8 @@ export default function BlogDetail() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
-                    <div className="absolute inset-0 flex items-end">
-                        <div className="container px-4 pt-56 md:pt-64 pb-12 md:pb-20">
+                    <div className="absolute inset-0 flex flex-col pt-28">
+                        <div className="mt-auto container px-4 pb-12 md:pb-20">
                             <motion.div
                                 initial={{ opacity: 0, y: 30 }}
                                 animate={{ opacity: 1, y: 0 }}
