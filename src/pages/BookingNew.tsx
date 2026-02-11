@@ -29,9 +29,8 @@ declare global {
 const steps = [
   { id: 1, title: 'Dates', icon: Calendar },
   { id: 2, title: 'Guests & Room', icon: Users },
-  { id: 3, title: 'Meal Plan', icon: Utensils },
-  { id: 4, title: 'Your Details', icon: User },
-  { id: 5, title: 'Confirm', icon: CheckCircle },
+  { id: 3, title: 'Your Details', icon: User },
+  { id: 4, title: 'Confirm', icon: CheckCircle },
 ];
 
 const formatCurrency = (amount: number) => {
@@ -107,8 +106,6 @@ const BookingPage = () => {
       case 2:
         return formData.roomCategoryId && formData.numAdults > 0;
       case 3:
-        return formData.mealPlan;
-      case 4:
         return formData.guestName.trim() && formData.guestEmail.trim() && formData.guestPhone.trim();
       default:
         return true;
@@ -116,7 +113,7 @@ const BookingPage = () => {
   };
 
   const handleNext = () => {
-    if (currentStep < 5 && canProceed()) {
+    if (currentStep < 4 && canProceed()) {
       setCurrentStep(prev => prev + 1);
     }
   };
@@ -525,50 +522,8 @@ const BookingPage = () => {
                       </div>
                     )}
 
-                    {/* Step 3: Meal Plan */}
+                    {/* Step 3: Guest Details (Formerly Step 4) */}
                     {currentStep === 3 && (
-                      <div className="space-y-6">
-                        <h2 className="font-serif text-2xl font-medium">Choose Meal Plan</h2>
-                        <p className="text-muted-foreground">Select your preferred meal package.</p>
-
-                        <div className="grid gap-4">
-                          {mealPlanPrices.map((plan) => (
-                            <button
-                              key={plan.id}
-                              onClick={() => setFormData(prev => ({ ...prev, mealPlan: plan.meal_plan }))}
-                              className={cn(
-                                "p-5 rounded-2xl border text-left transition-all",
-                                formData.mealPlan === plan.meal_plan
-                                  ? "border-gold bg-gold/5 shadow-gold"
-                                  : "border-border hover:border-gold/50"
-                              )}
-                            >
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <h3 className="font-serif text-lg font-medium">{plan.name}</h3>
-                                  <p className="text-sm text-muted-foreground mt-1">{plan.description}</p>
-                                </div>
-                                <div className="text-right">
-                                  {plan.adult_price > 0 ? (
-                                    <>
-                                      <p className="font-serif text-xl font-semibold text-forest">
-                                        {formatCurrency(plan.adult_price)}
-                                      </p>
-                                      <p className="text-xs text-muted-foreground">per adult/night</p>
-                                    </>
-                                  ) : (
-                                    <p className="font-serif text-lg font-medium text-forest">Included</p>
-                                  )}
-                                </div>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Step 4: Guest Details */}
-                    {currentStep === 4 && (
                       <div className="space-y-6">
                         <h2 className="font-serif text-2xl font-medium">Your Details</h2>
                         <p className="text-muted-foreground">Please provide your contact information.</p>
@@ -635,8 +590,8 @@ const BookingPage = () => {
                       </div>
                     )}
 
-                    {/* Step 5: Confirmation */}
-                    {currentStep === 5 && priceBreakdown && (
+                    {/* Step 4: Confirmation (Formerly Step 5) */}
+                    {currentStep === 4 && priceBreakdown && (
                       <div className="space-y-6">
                         <h2 className="font-serif text-2xl font-medium">Review & Confirm</h2>
                         <p className="text-muted-foreground">Please review your booking details before confirming.</p>
@@ -660,6 +615,10 @@ const BookingPage = () => {
                               <div>
                                 <p className="text-muted-foreground">Room</p>
                                 <p className="font-medium">{selectedRoom?.name}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Meal Plan</p>
+                                <p className="font-medium">Continental Plan (Breakfast Included)</p>
                               </div>
                             </div>
                           </div>
@@ -760,7 +719,7 @@ const BookingPage = () => {
                 </AnimatePresence>
 
                 {/* Navigation */}
-                {currentStep < 5 && (
+                {currentStep < 4 && (
                   <div className="flex justify-between mt-10 pt-6 border-t border-border">
                     <Button
                       variant="ghost"
