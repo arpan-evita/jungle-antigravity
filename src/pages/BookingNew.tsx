@@ -764,12 +764,6 @@ const BookingPage = () => {
                         </div>
                       )}
 
-                      {priceBreakdown.mealPlanTotal > 0 && (
-                        <div className="flex justify-between">
-                          <span className="text-ivory/70">Meal Plan</span>
-                          <span>{formatCurrency(priceBreakdown.mealPlanTotal)}</span>
-                        </div>
-                      )}
 
                       <div className="flex justify-between pt-3 border-t border-ivory/20">
                         <span className="text-ivory/70">Subtotal</span>
