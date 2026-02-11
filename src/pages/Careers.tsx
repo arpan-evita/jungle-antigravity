@@ -41,11 +41,6 @@ const benefits = [
     description: "Three nutritious meals daily from our resort kitchen",
   },
   {
-    icon: Heart,
-    title: "Health Insurance",
-    description: "Comprehensive medical coverage for you and your family",
-  },
-  {
     icon: GraduationCap,
     title: "Training & Growth",
     description: "Regular skill development programs and career advancement",
