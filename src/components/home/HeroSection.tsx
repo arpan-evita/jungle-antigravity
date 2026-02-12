@@ -27,10 +27,10 @@ const slides = [{
   description: "Luxuriously appointed villas designed for the discerning traveler."
 }, {
   image: poolImage,
-  label: "Relaxation Redefined",
-  title: "Relaxation",
-  titleAccent: "Redefined",
-  description: "Lounge at our infinity pool as the sun sets over the forest, embracing serene luxury at Jungle Heritage Resort."
+  label: "Serene Wilderness",
+  title: "Nature's",
+  titleAccent: "Gentle Embrace",
+  description: "Experience the calming soul of the forest and find peace in the heart of the wild at Jungle Heritage Resort."
 }];
 export function HeroSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
