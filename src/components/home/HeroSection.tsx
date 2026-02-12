@@ -3,10 +3,10 @@ import { Link } from "react-router-dom";
 import { ChevronDown, MessageCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useCallback } from "react";
-import heroImage from "@/assets/WhatsApp Image 2026-01-26 at 8.56.21 PM.jpeg";
+import heroImage from "@/assets/hero-lake-view.jpg";
 import safariImage from "@/assets/WhatsApp Image 2026-01-26 at 8.56.54 PM (1).jpeg";
-import villaImage from "@/assets/WhatsApp Image 2026-01-26 at 8.56.57 PM (1).jpeg";
-import poolImage from "@/assets/WhatsApp Image 2026-01-26 at 8.56.18 PM (2).jpeg";
+import villaImage from "@/assets/hero-villa-interior.jpg";
+import poolImage from "@/assets/hero-pool-side.jpg";
 const slides = [{
   image: heroImage,
   label: "A Luxury Forest Escape",
