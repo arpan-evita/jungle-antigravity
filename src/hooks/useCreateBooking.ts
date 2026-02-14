@@ -28,7 +28,7 @@ export function useCreateBooking() {
 
       // First, find an available room if this is a confirmed booking
       let assignedRoomId: string | null = null;
-      
+
       if (!formData.isEnquiryOnly && formData.roomCategoryId) {
         // Get available rooms for the selected dates
         const { data: availableRooms, error: availError } = await supabase.rpc('get_available_rooms', {
@@ -80,7 +80,7 @@ export function useCreateBooking() {
 
       if (error) throw error;
       if (!data) throw new Error('No data returned from booking insert');
-      
+
       // If booking is confirmed (not just enquiry) and we have a room, block the dates
       if (!formData.isEnquiryOnly && assignedRoomId) {
         // Use the database function to block dates
@@ -98,7 +98,7 @@ export function useCreateBooking() {
       }
 
       // Map the response to our Booking type
-      return {
+      const booking: Booking = {
         id: data.id,
         booking_reference: data.booking_reference,
         user_id: data.user_id,
@@ -130,11 +130,25 @@ export function useCreateBooking() {
         created_at: data.created_at,
         updated_at: data.updated_at,
       };
+
+      // Send email notification with the final booking data
+      try {
+        await supabase.functions.invoke('send-notification-email', {
+          body: {
+            type: 'booking',
+            data: data
+          }
+        });
+      } catch (err) {
+        console.error('Failed to send booking notification email:', err);
+      }
+
+      return booking;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['availability'] });
-      
+
       toast({
         title: data.is_enquiry_only ? "Enquiry Submitted!" : "Booking Confirmed!",
         description: `Your reference number is ${data.booking_reference}. We'll be in touch soon.`,

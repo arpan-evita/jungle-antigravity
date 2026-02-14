@@ -143,6 +143,21 @@ const Careers = () => {
 
       if (error) throw error;
 
+      // Send email notification
+      await supabase.functions.invoke('send-notification-email', {
+        body: {
+          type: 'enquiry',
+          data: {
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            subject: `Career Application: ${formData.position}`,
+            message: `Position: ${formData.position}\nExperience: ${formData.experience}\n\nAdditional Message: ${formData.message || "N/A"}`,
+            category: 'job_application'
+          }
+        }
+      });
+
       toast({
         title: "Application Submitted!",
         description: "Thank you for your interest. We'll review your application and get back to you soon.",
