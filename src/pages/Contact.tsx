@@ -50,7 +50,7 @@ const Contact = () => {
       if (error) throw error;
 
       // Send email notification
-      await supabase.functions.invoke('send-notification-email', {
+      const { data: funcData, error: funcError } = await supabase.functions.invoke('send-notification-email', {
         body: {
           type: 'enquiry',
           data: {
@@ -63,6 +63,12 @@ const Contact = () => {
           }
         }
       });
+
+      if (funcError) {
+        console.error('Edge Function error:', funcError);
+      } else {
+        console.log('Edge Function response:', funcData);
+      }
       toast({
         title: "Message Sent!",
         description: "We'll get back to you within 24 hours.",

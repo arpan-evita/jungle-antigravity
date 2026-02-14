@@ -67,6 +67,8 @@ serve(async (req) => {
       `
         }
 
+        console.log(`Sending ${type} email to ${toEmail}...`)
+
         const res = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
@@ -74,7 +76,7 @@ serve(async (req) => {
                 'Authorization': `Bearer ${RESEND_API_KEY}`,
             },
             body: JSON.stringify({
-                from: 'Jungle Heritage Resort <onboarding@resend.dev>', // Change to verified domain later
+                from: 'Jungle Heritage Resort <onboarding@resend.dev>',
                 to: [toEmail],
                 subject: subject,
                 html: html,
@@ -82,6 +84,11 @@ serve(async (req) => {
         })
 
         const resData = await res.json()
+        console.log('Resend Response:', resData)
+
+        if (!res.ok) {
+            throw new Error(resData.message || 'Failed to send email via Resend')
+        }
 
         return new Response(JSON.stringify(resData), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -89,6 +96,7 @@ serve(async (req) => {
         })
 
     } catch (error) {
+        console.error('Function error:', error.message)
         return new Response(JSON.stringify({ error: error.message }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 400,

@@ -133,12 +133,18 @@ export function useCreateBooking() {
 
       // Send email notification with the final booking data
       try {
-        await supabase.functions.invoke('send-notification-email', {
+        const { data: funcData, error: funcError } = await supabase.functions.invoke('send-notification-email', {
           body: {
             type: 'booking',
             data: data
           }
         });
+
+        if (funcError) {
+          console.error('Edge Function error:', funcError);
+        } else {
+          console.log('Edge Function response:', funcData);
+        }
       } catch (err) {
         console.error('Failed to send booking notification email:', err);
       }
