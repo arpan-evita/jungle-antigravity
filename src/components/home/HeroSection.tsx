@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import heroImage from "@/assets/hero-lake-view.jpg";
 import safariImage from "@/assets/WhatsApp Image 2026-01-26 at 8.56.54 PM (1).jpeg";
 import villaImage from "@/assets/hero-villa-interior.jpg";
-import poolImage from "@/assets/hero-room-view.png";
+import poolImage from "@/assets/WhatsApp Image 2026-01-26 at 8.56.20 PM (2).jpeg";
 const slides = [{
   image: heroImage,
   label: "A Luxury Forest Escape",
