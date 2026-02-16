@@ -24,6 +24,7 @@ import BlogDetail from "./pages/BlogDetail";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsAndConditions from "./pages/TermsAndConditions";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 
 // Admin Pages
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -45,6 +46,7 @@ import UsersPage from "./pages/admin/UsersPage";
 import GuestsPage from "./pages/admin/GuestsPage";
 import ReviewsPage from "./pages/admin/ReviewsPage";
 import BlogsPage from "./pages/admin/BlogsPage";
+import ChatLeads from "./pages/admin/ChatLeads";
 
 const queryClient = new QueryClient();
 
@@ -98,12 +100,15 @@ const App = () => (
               <Route path="users" element={<UsersPage />} />
               <Route path="guests" element={<GuestsPage />} />
               <Route path="reviews" element={<ReviewsPage />} />
+              <Route path="reviews" element={<ReviewsPage />} />
               <Route path="blogs" element={<BlogsPage />} />
+              <Route path="leads" element={<ChatLeads />} />
             </Route>
 
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <ChatWidget />
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>

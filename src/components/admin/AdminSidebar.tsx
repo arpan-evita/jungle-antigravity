@@ -83,6 +83,11 @@ const navItems = [
     icon: MessageSquare
   },
   {
+    title: "Chat Leads",
+    href: "/admin/leads",
+    icon: MessageSquare
+  },
+  {
     title: "Blogs",
     href: "/admin/blogs",
     icon: FileText
