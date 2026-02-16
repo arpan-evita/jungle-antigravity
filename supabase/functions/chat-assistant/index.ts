@@ -6,59 +6,6 @@ const corsHeaders = {
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Helper to call Gemini REST API directly
-async function callGemini(model: string, apiVersion: string, apiKey: string, messages: any[], systemPrompt: string) {
-    const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:generateContent?key=${apiKey}`;
-
-    let contents = messages.map((m: any) => ({
-        role: m.role === "user" ? "user" : "model",
-        parts: [{ text: m.content }]
-    }));
-
-    let requestBody: any = {
-        contents: contents,
-        generationConfig: {
-            maxOutputTokens: 500,
-        }
-    };
-
-    // Add System Prompt
-    if (model.includes("1.5")) {
-        // Use systemInstruction for 1.5 models
-        requestBody.systemInstruction = {
-            parts: [{ text: systemPrompt }]
-        };
-    } else {
-        // For gemini-pro (v1), usually best to prepend to history
-        const existingFirst = contents[0];
-        if (existingFirst && existingFirst.role === 'user') {
-            existingFirst.parts[0].text = `${systemPrompt}\n\n${existingFirst.parts[0].text}`;
-        } else {
-            contents.unshift({ role: 'user', parts: [{ text: systemPrompt }] });
-        }
-    }
-
-    const response = await fetch(url, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`API ${model} (${apiVersion}) failed: ${response.status} - ${errText}`);
-    }
-
-    const data = await response.json();
-    if (!data.candidates || data.candidates.length === 0 || !data.candidates[0].content) {
-        throw new Error("No content generated");
-    }
-
-    return data.candidates[0].content.parts[0].text;
-}
-
 serve(async (req) => {
     if (req.method === "OPTIONS") {
         return new Response("ok", { headers: corsHeaders });
@@ -75,85 +22,100 @@ serve(async (req) => {
             return new Response(JSON.stringify({ error: "Configuration Error: GEMINI_API_KEY is missing." }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
         }
 
-        const supabase = createClient(supabaseUrl, supabaseKey);
+        // STEP 1: DYNAMICALLY LIST MODELS
+        // We cannot guess. We must ask Google what models this key can see.
+        const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+        const listResp = await fetch(listUrl);
+
+        if (!listResp.ok) {
+            const errText = await listResp.text();
+            return new Response(JSON.stringify({ error: `List Models Failed: ${listResp.status} - ${errText}` }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
+        }
+
+        const listData = await listResp.json();
+        const models = listData.models || [];
+
+        // Filter for generation models
+        const chatModels = models.filter((m: any) =>
+            m.supportedGenerationMethods &&
+            m.supportedGenerationMethods.includes("generateContent") &&
+            m.name.includes("gemini")
+        );
+
+        if (chatModels.length === 0) {
+            return new Response(JSON.stringify({
+                error: `No chat models found for this key. Available models: ${models.map((m: any) => m.name).join(", ")}`
+            }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
+        }
+
+        // Prefer 1.5-flash, then 1.5-pro, then pro, then anything else
+        // Sort/Find logic
+        let selectedModel = chatModels.find((m: any) => m.name.includes("gemini-1.5-flash")) ||
+            chatModels.find((m: any) => m.name.includes("gemini-1.5-pro")) ||
+            chatModels.find((m: any) => m.name.includes("gemini-pro")) ||
+            chatModels[0];
+
+        // The name comes back as "models/gemini-pro", we need just "gemini-pro" for some endpoints, 
+        // but v1beta usually accepts "models/..." or just names. Let's use the full name as returned by the list API to be safe, 
+        // OR strip it if the generate endpoint requires it.
+        // The generate endpoint: models/{modelId}:generateContent
+        const modelId = selectedModel.name.replace("models/", "");
+
+        console.log(`Auto-selected model: ${modelId}`);
+
+        // STEP 2: GENERATE CONTENT
+        const genUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
 
         const systemPrompt = `You are the AI Front Desk Assistant for Jungle Heritage Resort.
         Tone: Luxury, warm, polite, professional, persuasive.
         Goal: Assist with bookings, answer FAQs, and collect lead details (Name, Email, Phone, Dates, Guests).
         Resort Info: Location: Dudhwa National Park. Offerings: Private villas, jungle safaris.
-        ALWAYS keep responses concise (under 3 sentences).`;
+        ALWAYS keep responses concise (under 3 sentences unless detailed info is requested).`;
 
-        let responseText = "";
-        let usedModel = "";
-        let lastError = null;
+        const contents = messages.map((m: any) => ({
+            role: m.role === "user" ? "user" : "model",
+            parts: [{ text: m.content }]
+        }));
 
-        // Strategy: Try Flash (v1beta) -> Pro (v1beta) -> Pro (v1)
-        const strategies = [
-            { model: "gemini-1.5-flash", version: "v1beta" },
-            { model: "gemini-1.5-pro", version: "v1beta" },
-            { model: "gemini-pro", version: "v1beta" },
-            { model: "gemini-pro", version: "v1" }
-        ];
-
-        for (const strategy of strategies) {
-            try {
-                console.log(`Attempting ${strategy.model} via ${strategy.version}...`);
-                responseText = await callGemini(strategy.model, strategy.version, apiKey, messages, systemPrompt);
-                usedModel = `${strategy.model}-${strategy.version}`;
-                console.log("Success!");
-                break;
-            } catch (e) {
-                console.warn(`Failed: ${e.message}`);
-                lastError = e;
-            }
+        // Add system prompt to first user message to be safe
+        if (contents.length > 0 && contents[0].role === "user") {
+            contents[0].parts[0].text = `${systemPrompt}\n\n${contents[0].parts[0].text}`;
+        } else {
+            contents.unshift({ role: "user", parts: [{ text: systemPrompt }] });
         }
 
-        if (!responseText) {
-            return new Response(JSON.stringify({ error: `All models failed. Last error: ${lastError?.message}` }), {
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-                status: 200
-            });
+        const genResp = await fetch(genUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: contents,
+                generationConfig: { maxOutputTokens: 500 }
+            })
+        });
+
+        if (!genResp.ok) {
+            const errText = await genResp.text();
+            return new Response(JSON.stringify({ error: `Generation Failed with model ${modelId}: ${genResp.status} - ${errText}` }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
         }
 
-        // Data Extraction
-        let leadData = {};
-        try {
-            const lastMsg = messages[messages.length - 1].content;
-            if (lastMsg) {
-                const extMessages = [{ role: 'user', content: `Analyze: "${lastMsg}". Return valid JSON only: { "name": null, "email": null, "phone": null, "dates": null, "guests": null, "type": "booking"|"general"|"safari"|"wedding" }. Return {} if empty.` }];
-                try {
-                    const extText = await callGemini("gemini-1.5-flash", "v1beta", apiKey, extMessages, "You are a JSON extractor.");
-                    const cleanJson = extText.replace(/```json/g, '').replace(/```/g, '').trim();
-                    leadData = JSON.parse(cleanJson);
-                } catch (extErr) {
-                    // Silent fail on extraction
-                }
-            }
-        } catch (e) {
-            console.error("Extraction ignored:", e);
-        }
+        const genData = await genResp.json();
+        const responseText = genData.candidates?.[0]?.content?.parts?.[0]?.text || "No response generated.";
 
-        // DB save
+        // SAVE TO DB
+        const supabase = createClient(supabaseUrl, supabaseKey);
         try {
             if (sessionId) {
                 await supabase.from("chat_sessions").upsert({
                     id: sessionId,
                     user_id: userId,
                     messages: [...messages, { role: "assistant", content: responseText }],
-                    metadata: { used_model: usedModel },
+                    metadata: { used_model: modelId },
                     updated_at: new Date().toISOString()
-                });
-            }
-            if (leadData && Object.values(leadData).some(v => v)) {
-                await supabase.from("chat_leads").insert({
-                    ...leadData,
-                    status: 'new',
-                    inquiry_type: leadData.type || 'general'
                 });
             }
         } catch (dbError) { console.error("DB Error", dbError); }
 
-        return new Response(JSON.stringify({ response: responseText, lead: leadData, model: usedModel }), {
+        return new Response(JSON.stringify({ response: responseText, model: modelId }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
 
