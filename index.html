@@ -1,54 +1,63 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" href="/favicon.png" type="image/png" />
-    
-    <!-- Primary Meta Tags -->
-    <title>Jungle Heritage | Where Luxury Meets Nature</title>
-    <meta name="description" content="Experience luxury in the heart of nature at Jungle Heritage Resort. Exclusive villas, jungle safaris, and world-class hospitality near Dudhwa National Park." />
-    <meta name="keywords" content="luxury resort, forest resort, Dudhwa, safari lodge, wilderness retreat, eco resort, honeymoon destination, wildlife resort, India" />
-    <meta name="author" content="Jungle Heritage Resort & Spa" />
-    
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="Jungle Heritage | Where Luxury Meets Nature" />
-    <meta property="og:description" content="A sanctuary where luxury meets wilderness. Exclusive forest villas, exotic wildlife safaris, and unforgettable experiences await." />
-    <meta property="og:site_name" content="Jungle Heritage" />
-    
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Jungle Heritage | Where Luxury Meets Nature" />
-    <meta name="twitter:description" content="Experience luxury in the heart of nature. Exclusive villas, jungle safaris, and world-class hospitality near Dudhwa." />
-    
-    <!-- Razorpay SDK -->
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    
-    <!-- Theme Color -->
-    <meta name="theme-color" content="#1a3a2f" />
 
-    <!-- Meta Pixel Code -->
-    <script>
-    !function(f,b,e,v,n,t,s)
-    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-    n.queue=[];t=b.createElement(e);t.async=!0;
-    t.src=v;s=b.getElementsByTagName(e)[0];
-    s.parentNode.insertBefore(t,s)}(window, document,'script',
-    'https://connect.facebook.net/en_US/fbevents.js');
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="/favicon.png" type="image/png" />
+
+  <!-- Primary Meta Tags -->
+  <title>Jungle Heritage | Where Luxury Meets Nature</title>
+  <meta name="description"
+    content="Experience luxury in the heart of nature at Jungle Heritage Resort. Exclusive villas, jungle safaris, and world-class hospitality near Dudhwa National Park." />
+  <meta name="keywords"
+    content="luxury resort, forest resort, Dudhwa, safari lodge, wilderness retreat, eco resort, honeymoon destination, wildlife resort, India" />
+  <meta name="author" content="Jungle Heritage Resort & Spa" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Jungle Heritage | Where Luxury Meets Nature" />
+  <meta property="og:description"
+    content="A sanctuary where luxury meets wilderness. Exclusive forest villas, exotic wildlife safaris, and unforgettable experiences await." />
+  <meta property="og:site_name" content="Jungle Heritage" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Jungle Heritage | Where Luxury Meets Nature" />
+  <meta name="twitter:description"
+    content="Experience luxury in the heart of nature. Exclusive villas, jungle safaris, and world-class hospitality near Dudhwa." />
+
+  <!-- Razorpay SDK -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+  <!-- Theme Color -->
+  <meta name="theme-color" content="#1a3a2f" />
+
+  <!-- Meta Pixel Code -->
+  <script>
+    !function (f, b, e, v, n, t, s) {
+      if (f.fbq) return; n = f.fbq = function () {
+        n.callMethod ?
+        n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+      };
+      if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+      n.queue = []; t = b.createElement(e); t.async = !0;
+      t.src = v; s = b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t, s)
+    }(window, document, 'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
     fbq('init', '1249351923802636');
     fbq('track', 'PageView');
-    </script>
-    <noscript><img height="1" width="1" style="display:none"
-    src="https://www.facebook.com/tr?id=1249351923802636&ev=PageView&noscript=1"
-    /></noscript>
-    <!-- End Meta Pixel Code -->
-  </head>
+  </script>
+  <!-- End Meta Pixel Code -->
+</head>
 
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<body>
+  <!-- Meta Pixel noscript fallback -->
+  <noscript><img height="1" width="1" style="display:none"
+      src="https://www.facebook.com/tr?id=1249351923802636&ev=PageView&noscript=1" /></noscript>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>
