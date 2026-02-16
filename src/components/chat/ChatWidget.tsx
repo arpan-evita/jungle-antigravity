@@ -105,10 +105,22 @@ export function ChatWidget() {
                                                     "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
                                                     msg.role === 'user'
                                                         ? "bg-forest text-ivory rounded-tr-none"
-                                                        : "bg-white border border-border/50 shadow-sm rounded-tl-none text-foreground"
+                                                        : "bg-white border border-border/50 shadow-sm rounded-tl-none text-foreground prose-chat"
                                                 )}
                                             >
-                                                {msg.content}
+                                                {msg.role === 'assistant' ? (
+                                                    <ReactMarkdown
+                                                        components={{
+                                                            a: ({ node, ...props }) => (
+                                                                <a {...props} target="_blank" rel="noopener noreferrer" className="text-gold hover:text-gold-light underline underline-offset-4 decoration-gold/30 hover:decoration-gold transition-all" />
+                                                            )
+                                                        }}
+                                                    >
+                                                        {msg.content}
+                                                    </ReactMarkdown>
+                                                ) : (
+                                                    msg.content
+                                                )}
                                             </div>
                                         </div>
                                     );

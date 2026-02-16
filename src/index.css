@@ -357,3 +357,20 @@
     animation-delay: 0.5s;
   }
 }
+
+/* Chat Markdown Styles */
+.prose-chat {
+  @apply text-inherit;
+}
+
+.prose-chat p {
+  @apply m-0 leading-relaxed;
+}
+
+.prose-chat p+p {
+  @apply mt-2;
+}
+
+.prose-chat a {
+  @apply text-gold font-medium transition-colors hover:text-gold-light underline underline-offset-4 decoration-gold/30 hover:decoration-gold;
+}
