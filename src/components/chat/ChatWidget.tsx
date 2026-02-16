@@ -6,10 +6,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageCircle, X, Send, Loader2, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { BookingForm } from './BookingForm';
 
 export function ChatWidget() {
     const [isOpen, setIsOpen] = useState(false);
-    const { messages, isLoading, sendMessage } = useChat();
+    const { messages, isLoading, sendMessage, setMessages } = useChat();
     const [inputValue, setInputValue] = useState('');
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -32,6 +33,14 @@ export function ChatWidget() {
         }
     };
 
+    const handleBookingSubmit = (data: any) => {
+        // Add a local system message to confirm receipt
+        setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: `Thank you, ${data.name}! We have received your booking request for ${data.guests} guests from ${data.checkIn} to ${data.checkOut}. Our team will contact you at ${data.phone} shortly to confirm.`
+        }]);
+    };
+
     return (
         <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end pointer-events-none">
             <AnimatePresence>
@@ -41,10 +50,10 @@ export function ChatWidget() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="mb-4 w-[350px] sm:w-[380px] h-[500px] bg-background border border-border/50 rounded-2xl shadow-luxury flex flex-col overflow-hidden pointer-events-auto"
+                        className="mb-4 w-[350px] sm:w-[380px] h-[550px] bg-background border border-border/50 rounded-2xl shadow-luxury flex flex-col overflow-hidden pointer-events-auto"
                     >
                         {/* Header */}
-                        <div className="p-4 bg-forest text-ivory flex justify-between items-center">
+                        <div className="p-4 bg-forest text-ivory flex justify-between items-center shrink-0">
                             <div className="flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
                                     <Sparkles className="w-4 h-4 text-gold" />
@@ -67,26 +76,43 @@ export function ChatWidget() {
                         {/* Messages */}
                         <ScrollArea className="flex-1 p-4 bg-cream/30">
                             <div className="space-y-4">
-                                {messages.map((msg, idx) => (
-                                    <div
-                                        key={idx}
-                                        className={cn(
-                                            "flex w-full mb-2",
-                                            msg.role === 'user' ? "justify-end" : "justify-start"
-                                        )}
-                                    >
+                                {messages.map((msg, idx) => {
+                                    // Check if this is a booking form trigger
+                                    const isBookingTrigger = msg.role === 'assistant' && msg.content.includes("[SHOW_BOOKING_FORM]");
+
+                                    if (isBookingTrigger) {
+                                        return (
+                                            <div key={idx} className="flex w-full mb-2 justify-start">
+                                                <div className="w-full max-w-[90%]">
+                                                    <div className="bg-white border border-border/50 shadow-sm rounded-2xl rounded-tl-none p-1 text-foreground">
+                                                        <BookingForm onSubmit={handleBookingSubmit} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+
+                                    return (
                                         <div
+                                            key={idx}
                                             className={cn(
-                                                "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
-                                                msg.role === 'user'
-                                                    ? "bg-forest text-ivory rounded-tr-none"
-                                                    : "bg-white border border-border/50 shadow-sm rounded-tl-none text-foreground"
+                                                "flex w-full mb-2",
+                                                msg.role === 'user' ? "justify-end" : "justify-start"
                                             )}
                                         >
-                                            {msg.content}
+                                            <div
+                                                className={cn(
+                                                    "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+                                                    msg.role === 'user'
+                                                        ? "bg-forest text-ivory rounded-tr-none"
+                                                        : "bg-white border border-border/50 shadow-sm rounded-tl-none text-foreground"
+                                                )}
+                                            >
+                                                {msg.content}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
 
                                 {isLoading && (
                                     <div className="flex justify-start mb-2">
@@ -102,7 +128,7 @@ export function ChatWidget() {
                         </ScrollArea>
 
                         {/* Input */}
-                        <div className="p-3 bg-background border-t border-border/50">
+                        <div className="p-3 bg-background border-t border-border/50 shrink-0">
                             <div className="relative flex items-center">
                                 <Input
                                     value={inputValue}
