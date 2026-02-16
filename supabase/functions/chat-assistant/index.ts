@@ -7,6 +7,8 @@ const corsHeaders = {
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const MODELS_TO_TRY = ["gemini-1.5-flash", "gemini-pro", "gemini-1.5-pro"];
+
 serve(async (req) => {
     if (req.method === "OPTIONS") {
         return new Response("ok", { headers: corsHeaders });
@@ -16,14 +18,11 @@ serve(async (req) => {
         const body = await req.json();
         const { messages, userId, sessionId } = body;
 
-        console.log("Received request:", { userId, sessionId, messageCount: messages?.length });
-
         const apiKey = Deno.env.get("GEMINI_API_KEY");
         const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
         const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
         if (!apiKey) {
-            console.error("Missing GEMINI_API_KEY");
             return new Response(JSON.stringify({ error: "Configuration Error: GEMINI_API_KEY is missing." }), {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
                 status: 200,
@@ -31,23 +30,6 @@ serve(async (req) => {
         }
 
         const genAI = new GoogleGenerativeAI(apiKey);
-
-        // --- DIAGNOSTIC START ---
-        // Verify which models are available for this API Key
-        // This helps debug 404 Model Not Found errors
-        /*
-        try {
-           const modelList = await genAI.getGenerativeModel({ model: "gemini-1.5-flash" }).countTokens("test");
-           // ^ Not a real list call, just a test. Real listing requires different API or just try-catch.
-           // Actually, standard SDK doesn't expose listModels cleanly in all versions.
-           // We will just proceed and catch specific 404s.
-        } catch (e) {
-           console.log("Model check failed", e);
-        }
-        */
-        // --- DIAGNOSTIC END ---
-
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         const supabase = createClient(supabaseUrl, supabaseKey);
 
         const systemPrompt = `You are the AI Front Desk Assistant for Jungle Heritage Resort.
@@ -61,59 +43,66 @@ serve(async (req) => {
             parts: [{ text: m.content }],
         }));
 
-        const chat = model.startChat({
-            history: [
-                { role: "user", parts: [{ text: systemPrompt }] },
-                { role: "model", parts: [{ text: "Understood. I am ready to assist." }] },
-                ...chatHistory.slice(0, -1)
-            ],
-            generationConfig: { maxOutputTokens: 500 }
-        });
-
         const lastMessage = messages[messages.length - 1].content;
         let responseText = "";
+        let usedModel = "";
+        let aiError = null;
 
-        try {
-            const result = await chat.sendMessage(lastMessage);
-            responseText = result.response.text();
-            console.log("Gemini Response generated");
-        } catch (aiError) {
-            console.error("Gemini API Error:", aiError);
+        // 1. Try Models Sequentially
+        for (const modelName of MODELS_TO_TRY) {
+            try {
+                console.log(`Attempting to use model: ${modelName}`);
+                const model = genAI.getGenerativeModel({ model: modelName });
 
-            // Check for 404 (Model Not Found) or 400 (Bad Request)
-            if (aiError.message?.includes("404") || aiError.toString().includes("Not Found")) {
-                return new Response(JSON.stringify({
-                    error: `Model Not Found. Your API Key might not have access to 'gemini-1.5-flash'. Please try 'gemini-pro'. Error: ${aiError.message}`
-                }), {
-                    headers: { ...corsHeaders, "Content-Type": "application/json" },
-                    status: 200,
+                const chat = model.startChat({
+                    history: [
+                        { role: "user", parts: [{ text: systemPrompt }] },
+                        { role: "model", parts: [{ text: "Understood. I am ready to assist." }] },
+                        ...chatHistory.slice(0, -1)
+                    ],
+                    generationConfig: { maxOutputTokens: 500 }
                 });
-            }
 
-            return new Response(JSON.stringify({ error: `AI Error: ${aiError.message}` }), {
+                const result = await chat.sendMessage(lastMessage);
+                responseText = result.response.text();
+                usedModel = modelName;
+                console.log(`Success with model: ${modelName}`);
+                break; // Exit loop on success
+            } catch (error) {
+                console.warn(`Failed with model ${modelName}:`, error.message);
+                aiError = error;
+                // Continue to next model
+            }
+        }
+
+        if (!responseText) {
+            return new Response(JSON.stringify({
+                error: `All AI models failed. Last error: ${aiError?.message}`
+            }), {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
                 status: 200,
             });
         }
 
-        // Extraction (Lead Info)
+        // 2. Extract Lead Info (Using the working model)
         let leadData = {};
         try {
             const extractionPrompt = `Analyze: "${lastMessage}". Return JSON: { "name": null, "email": null, "phone": null, "dates": null, "guests": null, "type": "booking"|"general"|"safari"|"wedding" }. Return {} if empty.`;
-            const extractionModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: { responseMimeType: "application/json" } });
+            const extractionModel = genAI.getGenerativeModel({ model: usedModel, generationConfig: { responseMimeType: "application/json" } });
             const extractionResult = await extractionModel.generateContent(extractionPrompt);
             leadData = JSON.parse(extractionResult.response.text());
         } catch (e) {
             console.error("Extraction Warning:", e);
         }
 
-        // Database
+        // 3. Save to Database
         try {
             if (sessionId) {
                 await supabase.from("chat_sessions").upsert({
                     id: sessionId,
                     user_id: userId,
                     messages: [...messages, { role: "assistant", content: responseText }],
+                    metadata: { used_model: usedModel },
                     updated_at: new Date().toISOString()
                 });
             }
@@ -128,7 +117,7 @@ serve(async (req) => {
             console.error("Database Operation Error:", dbError);
         }
 
-        return new Response(JSON.stringify({ response: responseText, lead: leadData }), {
+        return new Response(JSON.stringify({ response: responseText, lead: leadData, model: usedModel }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
 
