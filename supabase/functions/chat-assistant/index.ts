@@ -26,30 +26,35 @@ serve(async (req) => {
             console.error("Missing GEMINI_API_KEY");
             return new Response(JSON.stringify({ error: "Configuration Error: GEMINI_API_KEY is missing." }), {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
-                status: 200, // Return 200 to allow client to read error
+                status: 200,
             });
         }
 
         const genAI = new GoogleGenerativeAI(apiKey);
+
+        // --- DIAGNOSTIC START ---
+        // Verify which models are available for this API Key
+        // This helps debug 404 Model Not Found errors
+        /*
+        try {
+           const modelList = await genAI.getGenerativeModel({ model: "gemini-1.5-flash" }).countTokens("test");
+           // ^ Not a real list call, just a test. Real listing requires different API or just try-catch.
+           // Actually, standard SDK doesn't expose listModels cleanly in all versions.
+           // We will just proceed and catch specific 404s.
+        } catch (e) {
+           console.log("Model check failed", e);
+        }
+        */
+        // --- DIAGNOSTIC END ---
+
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         const supabase = createClient(supabaseUrl, supabaseKey);
 
-        // 1. Generate AI Response
         const systemPrompt = `You are the AI Front Desk Assistant for Jungle Heritage Resort.
     Tone: Luxury, warm, polite, professional, persuasive.
     Goal: Assist with bookings, answer FAQs, and collect lead details (Name, Email, Phone, Dates, Guests).
-    
-    Resort Info:
-    - Location: Dudhwa National Park.
-    - Offerings: Private villas, jungle safaris, nature walks, simplified luxury.
-    - Policy: Unmarried couples welcome.
-    
-    If the user expresses interest in booking, ask for their travel dates and number of guests.
-    If they provide details, confirm them and suggest our "Premium Villa" or "Jungle Cottage".
-    If asked about price, give a range but say exact rates depend on dates.
-    
-    ALWAYS keep responses concise (under 3 sentences unless detailed info is requested).
-    `;
+    Resort Info: Location: Dudhwa National Park. Offerings: Private villas, jungle safaris.
+    ALWAYS keep responses concise (under 3 sentences).`;
 
         const chatHistory = messages.map((m: any) => ({
             role: m.role === "user" ? "user" : "model",
@@ -58,19 +63,11 @@ serve(async (req) => {
 
         const chat = model.startChat({
             history: [
-                {
-                    role: "user",
-                    parts: [{ text: systemPrompt }]
-                },
-                {
-                    role: "model",
-                    parts: [{ text: "Understood. I am ready to assist guests of Jungle Heritage Resort." }]
-                },
-                ...chatHistory.slice(0, -1) // All except last
+                { role: "user", parts: [{ text: systemPrompt }] },
+                { role: "model", parts: [{ text: "Understood. I am ready to assist." }] },
+                ...chatHistory.slice(0, -1)
             ],
-            generationConfig: {
-                maxOutputTokens: 500,
-            }
+            generationConfig: { maxOutputTokens: 500 }
         });
 
         const lastMessage = messages[messages.length - 1].content;
@@ -82,49 +79,53 @@ serve(async (req) => {
             console.log("Gemini Response generated");
         } catch (aiError) {
             console.error("Gemini API Error:", aiError);
+
+            // Check for 404 (Model Not Found) or 400 (Bad Request)
+            if (aiError.message?.includes("404") || aiError.toString().includes("Not Found")) {
+                return new Response(JSON.stringify({
+                    error: `Model Not Found. Your API Key might not have access to 'gemini-1.5-flash'. Please try 'gemini-pro'. Error: ${aiError.message}`
+                }), {
+                    headers: { ...corsHeaders, "Content-Type": "application/json" },
+                    status: 200,
+                });
+            }
+
             return new Response(JSON.stringify({ error: `AI Error: ${aiError.message}` }), {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
                 status: 200,
             });
         }
 
-        // 2. Extract Lead Info (Lightweight parallel call)
+        // Extraction (Lead Info)
         let leadData = {};
         try {
-            const extractionPrompt = `Analyze this message: "${lastMessage}". Does it contain Name, Email, Phone, Dates, or Guest Count? Return JSON: { "name": string|null, "email": string|null, "phone": string|null, "dates": string|null, "guests": string|null, "type": "booking"|"general"|"safari"|"wedding" }. Return {} if nothing found.`;
+            const extractionPrompt = `Analyze: "${lastMessage}". Return JSON: { "name": null, "email": null, "phone": null, "dates": null, "guests": null, "type": "booking"|"general"|"safari"|"wedding" }. Return {} if empty.`;
             const extractionModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: { responseMimeType: "application/json" } });
             const extractionResult = await extractionModel.generateContent(extractionPrompt);
-            const extractionText = extractionResult.response.text();
-            leadData = JSON.parse(extractionText);
+            leadData = JSON.parse(extractionResult.response.text());
         } catch (e) {
             console.error("Extraction Warning:", e);
-            // Non-critical, continue
         }
 
-        // 3. Save to Database
+        // Database
         try {
             if (sessionId) {
-                const updatedMessages = [...messages, { role: "assistant", content: responseText }];
-                const { error: sessionError } = await supabase.from("chat_sessions").upsert({
+                await supabase.from("chat_sessions").upsert({
                     id: sessionId,
                     user_id: userId,
-                    messages: updatedMessages,
+                    messages: [...messages, { role: "assistant", content: responseText }],
                     updated_at: new Date().toISOString()
                 });
-                if (sessionError) console.error("Session Save Error:", sessionError);
             }
-
             if (leadData && Object.values(leadData).some(v => v)) {
-                const { error: leadError } = await supabase.from("chat_leads").insert({
+                await supabase.from("chat_leads").insert({
                     ...leadData,
                     status: 'new',
                     inquiry_type: leadData.type || 'general'
                 });
-                if (leadError) console.error("Lead Save Error:", leadError);
             }
         } catch (dbError) {
             console.error("Database Operation Error:", dbError);
-            // Don't fail request if DB fails, still return response to user
         }
 
         return new Response(JSON.stringify({ response: responseText, lead: leadData }), {
@@ -135,7 +136,7 @@ serve(async (req) => {
         console.error("General Function Error:", error);
         return new Response(JSON.stringify({ error: `Internal Server Error: ${error.message}` }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 200, // Return 200 to allow client to display error
+            status: 200,
         });
     }
 });
