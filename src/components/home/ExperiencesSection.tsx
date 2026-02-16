@@ -87,7 +87,7 @@ export function ExperiencesSection() {
                 <div className="absolute inset-0 bg-gradient-to-t from-forest-deep/80 via-forest-deep/20 to-transparent" />
 
                 {/* Content Overlay */}
-                <div className="absolute bottom-0 left-0 right-0 p-8 lg:p-10">
+                <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 lg:p-10">
                   <span className="inline-block px-4 py-1.5 bg-gold/20 backdrop-blur-sm rounded-full text-gold-light text-xs uppercase tracking-widest mb-4">
                     {displayExperiences[0].subtitle || "Experience"}
                   </span>

@@ -50,14 +50,14 @@ export function AboutSnippet() {
             </div>
 
             {/* Floating Image */}
-            <div className="absolute -bottom-10 -right-10 lg:-right-16 w-40 md:w-56 rounded-2xl overflow-hidden shadow-luxury border-4 border-background">
+            <div className="absolute -bottom-10 right-0 lg:-right-16 w-32 md:w-56 rounded-2xl overflow-hidden shadow-luxury border-4 border-background">
               <div className="aspect-square">
                 <img alt="Safari experience" className="w-full h-full object-cover" src="/lovable-uploads/04db6b7f-900e-467e-8f52-0039f279c3d4.jpg" />
               </div>
             </div>
 
             {/* Experience Badge */}
-            <div className="absolute -top-6 -left-6 lg:-left-10 bg-forest-deep text-ivory p-6 rounded-2xl shadow-luxury">
+            <div className="absolute -top-6 left-0 lg:-left-10 bg-forest-deep text-ivory p-6 rounded-2xl shadow-luxury transform scale-75 md:scale-100 origin-top-left md:origin-center">
               <div className="text-center">
                 <span className="block font-serif text-4xl font-semibold text-gold-light">10+</span>
                 <span className="text-xs uppercase tracking-widest text-ivory/80">Years of<br />Excellence</span>
