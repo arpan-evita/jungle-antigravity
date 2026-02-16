@@ -22,6 +22,8 @@ serve(async (req) => {
             return new Response(JSON.stringify({ error: "Configuration Error: GEMINI_API_KEY is missing." }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
         }
 
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
         // STEP 1: DYNAMICALLY LIST MODELS
         // We cannot guess. We must ask Google what models this key can see.
         const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
@@ -63,19 +65,57 @@ serve(async (req) => {
 
         console.log(`Auto-selected model: ${modelId}`);
 
+        // --- RAG STEP: Context Retrieval ---
+        let contextText = "";
+        const userMessage = messages[messages.length - 1]?.content || "";
+
+        try {
+            const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${apiKey}`;
+            const embedResp = await fetch(embedUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    model: "models/gemini-embedding-001",
+                    content: { parts: [{ text: userMessage }] }
+                })
+            });
+
+            if (embedResp.ok) {
+                const embedData = await embedResp.json();
+                const embedding = embedData.embedding.values;
+
+                const { data: chunks, error: matchError } = await supabase.rpc('match_documents', {
+                    query_embedding: embedding,
+                    match_threshold: 0.5,
+                    match_count: 5
+                });
+
+                if (!matchError && chunks) {
+                    contextText = chunks.map((c: any) => c.content).join("\n\n");
+                }
+            }
+        } catch (ragError) {
+            console.error("RAG Context Error:", ragError);
+        }
+
         // STEP 2: GENERATE CONTENT
         const genUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
 
         const systemPrompt = `You are the AI Front Desk Assistant for Jungle Heritage Resort.
         Tone: Luxury, warm, polite, professional, persuasive.
-        Goal: Assist with bookings, answer FAQs, and collect lead details.
+        Goal: Assist with bookings, answer FAQs using PROVIDED CONTEXT, and collect lead details.
         
-        CRITICAL INSTRUCTION:
-        If the user explicitly says they want to "book", "reserve", or "check availability" for a room/stay, DO NOT ask for details one by one.
-        Instead, simply reply with exactly this text: "[SHOW_BOOKING_FORM]"
+        CRITICAL INSTRUCTIONS:
+        1. If user wants to book/reserve, reply ONLY with: "[SHOW_BOOKING_FORM]"
+        2. USE DIRECT LINKS: When the context contains a specific link for a blog, experience, or package (e.g., /blog/some-title or /experiences/some-name), share that EXACT link using markdown.
+        3. BE PROACTIVE: If asked for "blogs" or "experiences", share the titles and direct links of the latest items found in the context. If no specific items are found, point them to the general /blog or /experiences page.
         
-        Resort Info: Location: Dudhwa National Park. Offerings: Private villas, jungle safaris.
-        For general questions, keep responses concise (under 3 sentences).`;
+        KNOWLEDGE CONTEXT:
+        ${contextText || "No context found. Welcome the guest and provide general help."}
+        
+        Resort Info: Location: Dudhwa National Park near Kishanpur Gate.
+        Contact: +91 9250225752.
+        Concise responses (under 4 sentences).`;
 
         const contents = messages.map((m: any) => ({
             role: m.role === "user" ? "user" : "model",
@@ -107,7 +147,6 @@ serve(async (req) => {
         const responseText = genData.candidates?.[0]?.content?.parts?.[0]?.text || "No response generated.";
 
         // SAVE TO DB
-        const supabase = createClient(supabaseUrl, supabaseKey);
         try {
             if (sessionId) {
                 await supabase.from("chat_sessions").upsert({

@@ -35,6 +35,21 @@ const chunks = [
         metadata: { category: "contact", type: "info" }
     },
     {
+        content: "Navigation Links for Jungle Heritage Resort: Home (/), Rooms & Villas (/rooms), Curated Experiences (/experiences), Special Packages (/packages), Photo Gallery (/gallery), About Our Story (/about), Careers (/careers), and our Journal/Blog (/blog). Use these relative paths to provide links to users.",
+        source_url: "sitemap",
+        metadata: { category: "navigation", type: "links" }
+    },
+    {
+        content: "Our Journal (Blog) at /blog features stories from the jungle, travel tips for Dudhwa National Park, and updates about life at Jungle Heritage Resort. Guests can read full stories at /blog.",
+        source_url: "/blog",
+        metadata: { category: "blog", type: "intro" }
+    },
+    {
+        content: "To book a stay or check availability, users can click the Quick Actions or visit the Booking page at /booking. The resort is located near the Kishanpur Gate of Dudhwa National Park.",
+        source_url: "/booking",
+        metadata: { category: "navigation", type: "booking" }
+    },
+    {
         content: "Dudhwa National Park has two major zones: Kishanpur and Dudhwa. Jungle Heritage Resort is located near the Kishanpur Gate.",
         source_url: "/contact",
         metadata: { category: "contact", type: "location" }
