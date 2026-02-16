@@ -31,7 +31,7 @@ serve(async (req) => {
         }
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
         const supabase = createClient(supabaseUrl, supabaseKey);
 
         // 1. Generate AI Response
@@ -92,7 +92,7 @@ serve(async (req) => {
         let leadData = {};
         try {
             const extractionPrompt = `Analyze this message: "${lastMessage}". Does it contain Name, Email, Phone, Dates, or Guest Count? Return JSON: { "name": string|null, "email": string|null, "phone": string|null, "dates": string|null, "guests": string|null, "type": "booking"|"general"|"safari"|"wedding" }. Return {} if nothing found.`;
-            const extractionModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: { responseMimeType: "application/json" } });
+            const extractionModel = genAI.getGenerativeModel({ model: "gemini-pro" });
             const extractionResult = await extractionModel.generateContent(extractionPrompt);
             const extractionText = extractionResult.response.text();
             leadData = JSON.parse(extractionText);
